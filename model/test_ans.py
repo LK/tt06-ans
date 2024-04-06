@@ -1,0 +1,63 @@
+import pytest
+from ans import C_rANS, D_rANS, Streaming_rANS_encoder, Streaming_rANS_decoder
+import ans
+import numpy as np
+
+
+def test_C_rANS():
+    state = 123
+    s = 2
+    symbol_counts = [1, 2, 3, 4]
+    expected_next_state = 413
+    assert (
+        C_rANS(s, state, symbol_counts) == expected_next_state
+    ), "C_rANS function did not return the expected next state"
+
+
+def test_D_rANS():
+    state = 413
+    symbol_counts = [1, 2, 3, 4]
+    expected_output = (2, 123)
+    assert (
+        D_rANS(state, symbol_counts) == expected_output
+    ), "D_rANS function did not return the expected symbol and previous state"
+
+
+def test_Streaming_rANS_encoder():
+    symbol_counts = [1, 2, 3, 4]
+    M = np.sum(symbol_counts)
+    l = 1
+
+    state = l * M
+    range_factor = 2 * l
+    symbol = 3
+
+    expected_state = 17
+    expected_bitstream = [0]
+
+    assert Streaming_rANS_encoder(state, symbol, symbol_counts, range_factor) == (
+        expected_state,
+        expected_bitstream,
+    ), "Streaming_rANS_encoder did not return the expected state and bitstream"
+
+
+def test_Streaming_rANS_decoder():
+    symbol_counts = [1, 2, 3, 4]
+    M = np.sum(symbol_counts)
+    l = 1
+    
+    state = 17
+    bitstream = [0]
+    range_factor = l
+
+    expected_symbol = 3
+    expected_final_state = l * M
+
+    assert Streaming_rANS_decoder(state, bitstream, symbol_counts, range_factor) == (
+        expected_symbol,
+        expected_final_state,
+    ), "Streaming_rANS_decoder did not return the expected symbol and final state"
+
+def test_compress_decompress():
+    data = [0,1,2,3]
+    assert ans.decode(ans.encode(data)) == data, "Compression error"
