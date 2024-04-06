@@ -27,10 +27,7 @@ def D_rANS(state, symbol_counts):
 
 
 def Streaming_rANS_encoder(state, symbol, symbol_counts, range_factor):
-    # total_counts = np.sum(symbol_counts)  # Represents M
-    # state = l * total_counts  # state initialized to lM
-
-    bitstream = []  # initialize stream
+    bitstream = []
 
     while state >= (range_factor * symbol_counts[symbol]):
         bitstream.append(state % 2)
@@ -42,12 +39,10 @@ def Streaming_rANS_encoder(state, symbol, symbol_counts, range_factor):
 
 
 def Streaming_rANS_decoder(state, bitstream, symbol_counts, range_factor):
-    total_counts = np.sum(symbol_counts)  # Represents M
+    total_counts = np.sum(symbol_counts)
 
-    # perform the rANS decoding
     s_decoded, state = D_rANS(state, symbol_counts)
 
-    # remap the state into the acceptable range
     while state < range_factor * total_counts:
         bits = bitstream.pop()
         state = (state << 1) + bits
