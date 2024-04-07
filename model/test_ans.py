@@ -30,12 +30,15 @@ def test_Streaming_rANS_encoder():
 
     state = l * M
     range_factor = 2 * l
-    symbol = 3
+    symbol = 0
+    shift = 1
 
-    expected_state = 17
-    expected_bitstream = [0]
+    expected_state = 10
+    expected_bitstream = [0, 1, 0]
 
-    assert Streaming_rANS_encoder(state, symbol, symbol_counts, range_factor) == (
+    assert Streaming_rANS_encoder(
+        state, symbol, symbol_counts, range_factor, shift
+    ) == (
         expected_state,
         expected_bitstream,
     ), "Streaming_rANS_encoder did not return the expected state and bitstream"
@@ -45,19 +48,23 @@ def test_Streaming_rANS_decoder():
     symbol_counts = [1, 2, 3, 4]
     M = np.sum(symbol_counts)
     l = 1
-    
-    state = 17
-    bitstream = [0]
-    range_factor = l
 
-    expected_symbol = 3
+    state = 10
+    bitstream = [0, 1, 0]
+    range_factor = l
+    shift = 1
+
+    expected_symbol = 0
     expected_final_state = l * M
 
-    assert Streaming_rANS_decoder(state, bitstream, symbol_counts, range_factor) == (
+    assert Streaming_rANS_decoder(
+        state, bitstream, symbol_counts, range_factor, shift
+    ) == (
         expected_symbol,
         expected_final_state,
     ), "Streaming_rANS_decoder did not return the expected symbol and final state"
 
-def test_compress_decompress():
-    data = [0,1,2,3]
+
+def test_compress_decompess():
+    data = [0, 1, 2, 3, 0, 0, 2, 1, 0, 1, 2, 2, 2]
     assert ans.decode(ans.encode(data)) == data, "Compression error"
