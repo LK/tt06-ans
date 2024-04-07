@@ -4,9 +4,11 @@
  */
 
 `define default_netname none
-`define DATA_WIDTH 4
+`define SYM_WIDTH 4
+`define CNT_WIDTH 4
 
 `include "encoder.v"
+`include "loader.v"
 
 module ans_encoder_top (
     input  wire [7:0] ui_in,    // Dedicated inputs
@@ -43,29 +45,52 @@ module ans_encoder_top (
 endmodule
 
 module ans (
-  input wire [`DATA_WIDTH-1:0] in,
-  output reg [`DATA_WIDTH-1:0] out,
+  input wire [`SYM_WIDTH-1:0] in,
+  output reg [`SYM_WIDTH-1:0] out,
   input wire [1:0] cmd,
 
   input wire in_vld,
-  output reg in_rdy,
+  output wire in_rdy,
 
-  output reg out_vld,
+  output wire out_vld,
   input wire out_rdy,
 
   input wire clk,
   input wire rst_n
 );
 
+wire mode_enc = cmd == 2'b01;
+wire mode_dec = cmd == 2'b10;
+wire mode_load = cmd == 2'b11;
+
+wire [`CNT_WIDTH-1:0] counts[2**`SYM_WIDTH-1:0];
+
+wire loader_in_rdy;
+
+ans_loader loader (
+  .in(in),
+  .counts(counts),
+  .in_vld(in_vld),
+  .in_rdy(loader_in_rdy),
+  .clk(mode_load ? clk : 1'b0),
+  .rst_n(rst_n)
+);
+
+wire encoder_in_rdy;
+wire encoder_out_vld;
+
 ans_encoder encoder (
   .in(in),
   .out(out),
   .in_vld(in_vld),
-  .in_rdy(in_rdy),
-  .out_vld(out_vld),
+  .in_rdy(encoder_in_rdy),
+  .out_vld(encoder_out_vld),
   .out_rdy(out_rdy),
-  .clk(clk),
+  .clk(mode_enc ? clk : 1'b0),
   .rst_n(rst_n)
 );
+
+assign in_rdy = mode_load ? loader_in_rdy : mode_enc ? encoder_in_rdy : 1'b0;
+assign out_vld = mode_enc ? encoder_out_vld : 1'b0;
 
 endmodule
