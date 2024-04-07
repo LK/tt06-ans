@@ -29,7 +29,7 @@ def test_Streaming_rANS_encoder():
     l = 1
 
     state = l * M
-    range_factor = 2 * l
+    range_factor = l
     symbol = 0
     shift = 1
 

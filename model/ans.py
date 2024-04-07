@@ -31,7 +31,7 @@ def Streaming_rANS_encoder(state, symbol, symbol_counts, range_factor, shift):
     mask = (1 << shift) - 1
     adjust = 1 << (shift - 1)
 
-    while state >= (adjust * range_factor * symbol_counts[symbol]):
+    while state >= (adjust * 2 * range_factor * symbol_counts[symbol]):
         bitstream.append(state & mask)
         state = state >> shift
 
@@ -59,7 +59,7 @@ def encode(data: bytes):
     l = 1
 
     state = l * M
-    range_factor = 2 * l
+    range_factor = l
     shift = 8
 
     output = []
