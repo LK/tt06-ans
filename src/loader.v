@@ -1,6 +1,6 @@
 module ans_loader (
   input wire [`CNT_WIDTH-1:0] in,
-  output reg [`CNT_WIDTH-1:0] counts[`SYM_COUNT-1:0],
+  output reg [`CNT_WIDTH-1:0] counts,
 
   input wire in_vld,
   output reg in_rdy,
