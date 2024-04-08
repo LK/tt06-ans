@@ -64,7 +64,10 @@ def test_Streaming_rANS_decoder():
         expected_final_state,
     ), "Streaming_rANS_decoder did not return the expected symbol and final state"
 
-
-def test_compress_decompess():
+def test_hardware_ans():
     data = [0, 1, 2, 3, 0, 0, 2, 1, 0, 1, 2, 2, 2]
-    assert ans.decode(ans.encode(data)) == data, "Compression error"
+    
+    hw = ans.HardwareAns()
+    hw.set_counts([1,2,3,4])
+
+    assert hw.decode(hw.encode(data)) == data, "Compression error"

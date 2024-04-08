@@ -52,44 +52,60 @@ def Streaming_rANS_decoder(state, bitstream, symbol_counts, range_factor, shift)
     return s_decoded, state
 
 
-def encode(data: bytes):
+class HardwareAns:
 
-    symbol_counts = [1, 2, 3, 4]
-    M = np.sum(symbol_counts)
-    l = 1
+    def __init__(self, alphabet_size=256, shift=8) -> None:
+        self.state = 0
+        self.l = 1
+        self.M = alphabet_size * 8
+        self.counts = [1] * alphabet_size
+        self.shift = shift
 
-    state = l * M
-    range_factor = l
-    shift = 8
+    def set_counts(self, symbol_counts):
+        self.counts = symbol_counts
+        self.M = sum(symbol_counts)
 
-    output = []
+    def set_shift(self, shift):
+        self.shift = shift
 
-    for symbol in data:
-        state, bits = Streaming_rANS_encoder(
-            state, symbol, symbol_counts, range_factor, shift
+    def encode_symbol(self, symbol):
+        self.state, bits = Streaming_rANS_encoder(
+            state=self.state,
+            symbol=symbol,
+            symbol_counts=self.counts,
+            range_factor=self.l,
+            shift=self.shift,
         )
-        output.extend(bits)
+        return bits
 
-    output.append(state)
-
-    return output
-
-
-def decode(compressed):
-
-    symbol_counts = [1, 2, 3, 4]
-    M = np.sum(symbol_counts)
-    l = 1
-    range_factor = l
-    shift = 8
-
-    state = compressed.pop()
-    output = []
-
-    while compressed or state != l * M:
-        symbol, state = Streaming_rANS_decoder(
-            state, compressed, symbol_counts, range_factor, shift
+    def decode_symbol(self, bitstream):
+        symbol, self.state = Streaming_rANS_decoder(
+            state=self.state,
+            bitstream=bitstream,
+            symbol_counts=self.counts,
+            range_factor=self.l,
+            shift=self.shift,
         )
-        output.append(symbol)
+        return symbol
 
-    return list(reversed(output))
+    def encode(self, data):
+        output = []
+        self.state = self.l * self.M
+
+        for symbol in data:
+            bits = self.encode_symbol(symbol)
+            output.extend(bits)
+
+        output.append(self.state)
+        return output
+
+    def decode(self, compressed):
+        output = []
+        self.state = compressed.pop()
+
+        while compressed or self.state != (self.l * self.M):
+            symbol = self.decode_symbol(compressed)
+            output.append(symbol)
+
+        return list(reversed(output))
+
