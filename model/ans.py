@@ -88,7 +88,7 @@ class HardwareAns:
         )
         return symbol
 
-    def encode(self, data):
+    def encode(self, data: bytes):
         output = []
         self.state = self.l * self.M
 
@@ -99,7 +99,7 @@ class HardwareAns:
         output.append(self.state)
         return output
 
-    def decode(self, compressed):
+    def decode(self, compressed: bytes):
         output = []
         self.state = compressed.pop()
 
@@ -107,5 +107,5 @@ class HardwareAns:
             symbol = self.decode_symbol(compressed)
             output.append(symbol)
 
-        return list(reversed(output))
+        return bytes(reversed(output))
 
