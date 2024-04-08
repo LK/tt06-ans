@@ -87,6 +87,20 @@ class AnsHardware:
         )
         return next_state
 
+    def d_rANS(self, state):
+        # The Cumulative frequency inverse function
+        def cumul_inverse(y):
+            for i, _s in enumerate(self.cumulative):
+                if y < _s:
+                    return i - 1
+
+        slot = state % self.M  # compute the slot
+        symbol = cumul_inverse(slot)  # decode the symbol
+        self.state = (
+            (state // self.M) * self.counts[symbol] + slot - self.cumulative[symbol]
+        )
+        return symbol
+
     def encode(self, symbol):
         bitstream = []
         mask = (1 << self.shift) - 1
@@ -100,14 +114,14 @@ class AnsHardware:
         return bitstream
 
     def decode(self, bitstream):
-        symbol, self.state = Streaming_rANS_decoder(
-            state=self.state,
-            bitstream=bitstream,
-            symbol_counts=self.counts,
-            range_factor=self.l,
-            shift=self.shift,
-        )
-        return symbol
+
+        s_decoded = self.d_rANS(self.state)
+
+        while self.state < (self.l * self.M):
+            bits = bitstream.pop()
+            self.state = (self.state << self.shift) + bits
+
+        return s_decoded
 
 
 class AnsLibrary:
