@@ -88,7 +88,7 @@ class HardwareAns:
         )
         return symbol
 
-    def encode(self, data: bytes):
+    def encode(self, data: bytes) -> (int, bytes):
         output = []
         self.state = self.l * self.M
 
@@ -96,16 +96,15 @@ class HardwareAns:
             bits = self.encode_symbol(symbol)
             output.extend(bits)
 
-        output.append(self.state)
-        return output
+        return self.state, bytes(output)
 
-    def decode(self, compressed: bytes):
+    def decode(self, state: int, compressed: bytes) -> bytes:
         output = []
-        self.state = compressed.pop()
+        self.state = state
+        bitstream = list(compressed)
 
-        while compressed or self.state != (self.l * self.M):
-            symbol = self.decode_symbol(compressed)
+        while bitstream or self.state != (self.l * self.M):
+            symbol = self.decode_symbol(bitstream)
             output.append(symbol)
 
         return bytes(reversed(output))
-

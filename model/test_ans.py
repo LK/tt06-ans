@@ -75,4 +75,7 @@ def test_hardware_ans():
     hw = ans.HardwareAns()
     hw.set_counts(counts)
 
-    assert hw.decode(hw.encode(data)) == data, "Compression error"
+    state, compressed = hw.encode(data)
+    decoded = hw.decode(state, compressed)
+
+    assert decoded == data, "Compression error"
