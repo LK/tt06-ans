@@ -72,10 +72,10 @@ def test_hardware_ans():
     for i in set(data):
         counts[i] = data.count(i)
 
-    hw = ans.HardwareAns()
-    hw.set_counts(counts)
+    ans_module = ans.AnsLibrary()
+    ans_module.set_counts(counts)
 
-    state, compressed = hw.encode(data)
-    decoded = hw.decode(state, compressed)
+    state, compressed = ans_module.encode_data(data)
+    decoded = ans_module.decode_data(state, compressed)
 
     assert decoded == data, "Compression error"

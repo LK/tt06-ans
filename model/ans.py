@@ -52,33 +52,54 @@ def Streaming_rANS_decoder(state, bitstream, symbol_counts, range_factor, shift)
     return s_decoded, state
 
 
-class HardwareAns:
+class AnsHardware:
+    """Model a ANS hardware block with a memory mapped interface"""
 
     def __init__(self, alphabet_size=256, shift=8) -> None:
         self.state = 0
         self.l = 1
-        self.M = alphabet_size * 8
-        self.counts = [1] * alphabet_size
+        self.M = 0
+
+        self.counts = [0] * alphabet_size
+        self.cumulative = [0] * (alphabet_size + 1)
+
         self.shift = shift
+
+    def reset_state(self):
+        self.state = self.l * self.M
+
+    def update_count(self, symbol, count):
+        self.M += count
+        self.counts[symbol] = count
+        for n in range(symbol, len(self.counts)):
+            self.cumulative[n + 1] += count
 
     def set_counts(self, symbol_counts):
-        self.counts = symbol_counts
-        self.M = sum(symbol_counts)
+        for symbol, count in enumerate(symbol_counts):
+            self.update_count(symbol, count)
 
-    def set_shift(self, shift):
-        self.shift = shift
-
-    def encode_symbol(self, symbol):
-        self.state, bits = Streaming_rANS_encoder(
-            state=self.state,
-            symbol=symbol,
-            symbol_counts=self.counts,
-            range_factor=self.l,
-            shift=self.shift,
+    def c_rANS(self, symbol):
+        s_count = self.counts[symbol]
+        next_state = (
+            (self.state // s_count) * self.M
+            + self.cumulative[symbol]
+            + (self.state % s_count)
         )
-        return bits
+        return next_state
 
-    def decode_symbol(self, bitstream):
+    def encode(self, symbol):
+        bitstream = []
+        mask = (1 << self.shift) - 1
+        adjust = 1 << (self.shift - 1)
+
+        while self.state >= (adjust * 2 * self.l * self.counts[symbol]):
+            bitstream.append(self.state & mask)
+            self.state = self.state >> self.shift
+
+        self.state = self.c_rANS(symbol)
+        return bitstream
+
+    def decode(self, bitstream):
         symbol, self.state = Streaming_rANS_decoder(
             state=self.state,
             bitstream=bitstream,
@@ -88,23 +109,35 @@ class HardwareAns:
         )
         return symbol
 
-    def encode(self, data: bytes) -> (int, bytes):
+
+class AnsLibrary:
+    """Models a processor interacting with a memory mapped ANS peripheral"""
+
+    def __init__(self) -> None:
+        self.hw = AnsHardware()
+
+    def set_counts(self, symbol_counts: list):
+        for symbol, count in enumerate(symbol_counts):
+            self.hw.update_count(symbol, count)
+
+    def encode_data(self, data: bytes) -> (int, bytes):
         output = []
-        self.state = self.l * self.M
+        self.hw.reset_state()
 
         for symbol in data:
-            bits = self.encode_symbol(symbol)
-            output.extend(bits)
+            bits = self.hw.encode(symbol)
+            if bits:
+                output.extend(bits)
 
-        return self.state, bytes(output)
+        return self.hw.state, bytes(output)
 
-    def decode(self, state: int, compressed: bytes) -> bytes:
+    def decode_data(self, state: int, compressed: bytes) -> bytes:
         output = []
-        self.state = state
+        self.hw.state = state
         bitstream = list(compressed)
 
-        while bitstream or self.state != (self.l * self.M):
-            symbol = self.decode_symbol(bitstream)
+        while bitstream or self.hw.state != (self.hw.l * self.hw.M):
+            symbol = self.hw.decode(bitstream)
             output.append(symbol)
 
         return bytes(reversed(output))
