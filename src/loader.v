@@ -1,6 +1,6 @@
 module ans_loader (
   input wire [`CNT_WIDTH-1:0] in,
-  output reg [`CNT_WIDTH-1:0] counts[2**`SYM_WIDTH-1:0],
+  output reg [`CNT_WIDTH-1:0] counts[`SYM_COUNT-1:0],
 
   input wire in_vld,
   output reg in_rdy,
@@ -14,7 +14,7 @@ reg [`SYM_WIDTH-1:0] counter;
 always @(posedge clk or negedge rst_n) begin
   if (!rst_n) begin
     in_rdy <= 1'b1;
-    for (integer i = 0; i < 2**`SYM_WIDTH; i = i + 1) begin
+    for (integer i = 0; i < `SYM_COUNT; i = i + 1) begin
       counts[i] <= 0;
     end
     counter <= 0;

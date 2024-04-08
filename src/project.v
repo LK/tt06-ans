@@ -5,6 +5,7 @@
 
 `define default_netname none
 `define SYM_WIDTH 4
+`define SYM_COUNT 16
 `define CNT_WIDTH 4
 
 `include "encoder.v"
@@ -64,7 +65,7 @@ wire mode_enc = cmd == 2'b01;
 wire mode_dec = cmd == 2'b10;
 wire mode_load = cmd == 2'b11;
 
-wire [`CNT_WIDTH-1:0] counts[2**`SYM_WIDTH-1:0];
+wire [`CNT_WIDTH-1:0] counts[`SYM_COUNT-1:0];
 
 wire loader_in_rdy;
 
