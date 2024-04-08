@@ -94,24 +94,24 @@ class AnsHardware:
                 if y < _s:
                     return i - 1
 
-        slot = state % self.M  # compute the slot
-        symbol = cumul_inverse(slot)  # decode the symbol
+        slot = state % self.M
+        symbol = cumul_inverse(slot)
         self.state = (
             (state // self.M) * self.counts[symbol] + slot - self.cumulative[symbol]
         )
         return symbol
 
-    def encode(self, symbol):
-        bitstream = []
+    def encode(self, symbol) -> int | None:
         mask = (1 << self.shift) - 1
         adjust = 1 << (self.shift - 1)
 
-        while self.state >= (adjust * 2 * self.l * self.counts[symbol]):
-            bitstream.append(self.state & mask)
+        if self.state >= (adjust * 2 * self.l * self.counts[symbol]):
+            output = self.state & mask
             self.state = self.state >> self.shift
+            return output
 
         self.state = self.c_rANS(symbol)
-        return bitstream
+        return None
 
     def decode(self, bitstream):
 
@@ -140,8 +140,9 @@ class AnsLibrary:
 
         for symbol in data:
             bits = self.hw.encode(symbol)
-            if bits:
-                output.extend(bits)
+            while bits: # Valid signal
+                output.append(bits)
+                bits = self.hw.encode(symbol)
 
         return self.hw.state, bytes(output)
 
