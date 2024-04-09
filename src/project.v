@@ -29,7 +29,6 @@ module tt_um_lk_ans_top (
   // assign uio_oe  = 0;
 
   assign uio_oe = 8'b00001111;
-  assign uio_in[7:6] = 2'b00;
   assign uo_out[7:4] = 4'b0000;
 
   ans ans_block (
