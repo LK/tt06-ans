@@ -9,6 +9,7 @@ module ans_decoder (
   input wire out_rdy,
 
   input wire clk,
+  input wire en,
   input wire rst_n
 );
 
@@ -18,12 +19,12 @@ always @(posedge clk or negedge rst_n) begin
     out_vld <= 1'b0;
     in_rdy <= 1'b1;
     out <= 0;
-  end else if (in_vld && in_rdy) begin
+  end else if (en && in_vld && in_rdy) begin
     // We have input data, process it.
     out <= in;
     in_rdy <= 1'b0;
     out_vld <= 1'b1;
-  end else if (out_vld && out_rdy) begin
+  end else if (en && out_vld && out_rdy) begin
     // Output data has been read, go back to reading an input.
     out_vld <= 1'b0;
     in_rdy <= 1'b1;

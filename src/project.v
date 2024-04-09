@@ -5,12 +5,8 @@
 
 `define default_netname none
 `define SYM_WIDTH 4
-`define SYM_COUNT 16
+`define SYM_COUNT (2**`SYM_WIDTH)
 `define CNT_WIDTH 4
-
-`include "encoder.v"
-`include "decoder.v"
-`include "loader.v"
 
 module tt_um_lk_ans_top (
     input  wire [7:0] ui_in,    // Dedicated inputs
@@ -29,8 +25,9 @@ module tt_um_lk_ans_top (
   // assign uio_oe  = 0;
 
   assign uio_oe = 8'b00001111;
-  assign uio_in[7:6] = 2'b00;
   assign uo_out[7:4] = 4'b0000;
+  assign uio_out[3:0] = 4'b0000;
+  assign uio_out[7:6] = 2'b00;
 
   ans ans_block (
     .in(ui_in[3:0]),
@@ -66,15 +63,22 @@ wire mode_dec = cmd == 2'b10;
 wire mode_load = cmd == 2'b11;
 
 wire [`CNT_WIDTH-1:0] counts[`SYM_COUNT-1:0];
+wire [(`CNT_WIDTH * `SYM_COUNT)-1:0] counts_unpacked;
+
+genvar i;
+generate for (i = 0; i < `SYM_COUNT; i = i + 1) begin
+  assign counts_unpacked[i*`CNT_WIDTH +: `CNT_WIDTH] = counts[i];
+end endgenerate
 
 wire loader_in_rdy;
 
 ans_loader loader (
   .in(in),
-  .counts(counts),
+  .counts_unpacked(counts_unpacked),
   .in_vld(in_vld),
   .in_rdy(loader_in_rdy),
-  .clk(mode_load ? clk : 1'b0),
+  .clk(clk),
+  .en(mode_load),
   .rst_n(rst_n)
 );
 
@@ -89,7 +93,8 @@ ans_encoder encoder (
   .in_rdy(encoder_in_rdy),
   .out_vld(encoder_out_vld),
   .out_rdy(out_rdy),
-  .clk(mode_enc ? clk : 1'b0),
+  .clk(clk),
+  .en(mode_enc),
   .rst_n(rst_n)
 );
 
@@ -104,7 +109,8 @@ ans_decoder decoder (
   .in_rdy(decoder_in_rdy),
   .out_vld(decoder_out_vld),
   .out_rdy(out_rdy),
-  .clk(mode_dec ? clk : 1'b0),
+  .clk(clk),
+  .en(mode_dec),
   .rst_n(rst_n)
 );
 

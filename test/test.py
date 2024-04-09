@@ -28,7 +28,6 @@ async def test_encode(dut):
   data_out = []
 
   for d in data_in:
-    print(d)
     dut.ui_in.value = d
     dut.uio_in.value = 0b0101 # mode = encode, in_vld = 1, out_rdy = 0
     await ClockCycles(dut.clk, 2)
@@ -69,7 +68,6 @@ async def test_load(dut):
 
   for d in state_in:
     assert dut.uio_out[4] == 1 # in_rdy = 1
-    print(d)
     dut.ui_in.value = d
     dut.uio_in.value = 0b0111 # mode = load, in_vld = 1
     await ClockCycles(dut.clk, 2)
@@ -77,4 +75,9 @@ async def test_load(dut):
     dut.uio_in.value = 0b0011 # mode = load, in_vld = 0
     await ClockCycles(dut.clk, 2)
 
-  assert [x.value for x in reversed(dut.user_project.ans_block.loader.counts.value)] == state_in
+  # TODO(lenny): make this work for gate-level sims
+  try:
+    print('state', dut.user_project.ans_block.loader.counts_reg.value)
+    assert [x.value for x in reversed(dut.user_project.ans_block.loader.counts_reg.value)] == state_in
+  except AttributeError:
+    pass
