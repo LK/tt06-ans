@@ -79,3 +79,19 @@ def test_hardware_ans():
     decoded = ans_module.decode_data(state, compressed)
 
     assert decoded == data, "Compression error"
+
+
+def test_hardware_ans_4bit():
+    data = bytes([3, 0, 1, 1, 2, 12, 2, 3, 3, 3, 3, 1, 1, 2, 3, 4, 1, 5, 15])
+    
+    counts = [0] * 16
+    for i in set(data):
+        counts[i] = data.count(i)
+
+    ans_module = ans.AnsLibrary(alphabet_size=16, shift=4)
+    ans_module.set_counts(counts)
+
+    state, compressed = ans_module.encode_data(data)
+    decoded = ans_module.decode_data(state, compressed)
+
+    assert decoded == data, "Compression error"

@@ -119,8 +119,8 @@ class AnsHardware:
 class AnsLibrary:
     """Models a processor interacting with a memory mapped ANS peripheral"""
 
-    def __init__(self) -> None:
-        self.hw = AnsHardware()
+    def __init__(self, alphabet_size=256, shift=8) -> None:
+        self.hw = AnsHardware(alphabet_size, shift)
 
     def set_counts(self, symbol_counts: list):
         for symbol, count in enumerate(symbol_counts):
