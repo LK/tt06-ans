@@ -8,10 +8,6 @@
 `define SYM_COUNT (2**`SYM_WIDTH)
 `define CNT_WIDTH 4
 
-`include "encoder.v"
-`include "decoder.v"
-`include "loader.v"
-
 module tt_um_lk_ans_top (
     input  wire [7:0] ui_in,    // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
