@@ -75,4 +75,9 @@ async def test_load(dut):
     dut.uio_in.value = 0b0011 # mode = load, in_vld = 0
     await ClockCycles(dut.clk, 2)
 
-  assert [x.value for x in reversed(dut.user_project.ans_block.loader.counts_reg.value)] == state_in
+  # TODO(lenny): make this work for gate-level sims
+  try:
+    print('state', dut.user_project.ans_block.loader.counts_reg.value)
+    assert [x.value for x in reversed(dut.user_project.ans_block.loader.counts_reg.value)] == state_in
+  except AttributeError:
+    pass
