@@ -5,7 +5,7 @@
 
 `define default_netname none
 `define SYM_WIDTH 4
-`define SYM_COUNT 16
+`define SYM_COUNT (2**`SYM_WIDTH)
 `define CNT_WIDTH 4
 
 `include "encoder.v"
@@ -66,12 +66,18 @@ wire mode_dec = cmd == 2'b10;
 wire mode_load = cmd == 2'b11;
 
 wire [`CNT_WIDTH-1:0] counts[`SYM_COUNT-1:0];
+wire [(`CNT_WIDTH * `SYM_COUNT)-1:0] counts_unpacked;
+
+genvar i;
+generate for (i = 0; i < `SYM_COUNT; i = i + 1) begin
+  assign counts_unpacked[i*`CNT_WIDTH +: `CNT_WIDTH] = counts[i];
+end endgenerate
 
 wire loader_in_rdy;
 
 ans_loader loader (
   .in(in),
-  .counts(counts),
+  .counts_unpacked(counts_unpacked),
   .in_vld(in_vld),
   .in_rdy(loader_in_rdy),
   .clk(mode_load ? clk : 1'b0),
