@@ -26,6 +26,8 @@ module tt_um_lk_ans_top (
 
   assign uio_oe = 8'b00001111;
   assign uo_out[7:4] = 4'b0000;
+  assign uio_out[3:0] = 4'b0000;
+  assign uio_out[7:6] = 2'b00;
 
   ans ans_block (
     .in(ui_in[3:0]),
