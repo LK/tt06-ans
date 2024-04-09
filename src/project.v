@@ -77,7 +77,8 @@ ans_loader loader (
   .counts_unpacked(counts_unpacked),
   .in_vld(in_vld),
   .in_rdy(loader_in_rdy),
-  .clk(mode_load ? clk : 1'b0),
+  .clk(clk),
+  .en(mode_load),
   .rst_n(rst_n)
 );
 
@@ -92,7 +93,8 @@ ans_encoder encoder (
   .in_rdy(encoder_in_rdy),
   .out_vld(encoder_out_vld),
   .out_rdy(out_rdy),
-  .clk(mode_enc ? clk : 1'b0),
+  .clk(clk),
+  .en(mode_enc),
   .rst_n(rst_n)
 );
 
@@ -107,7 +109,8 @@ ans_decoder decoder (
   .in_rdy(decoder_in_rdy),
   .out_vld(decoder_out_vld),
   .out_rdy(out_rdy),
-  .clk(mode_dec ? clk : 1'b0),
+  .clk(clk),
+  .en(mode_dec),
   .rst_n(rst_n)
 );
 
