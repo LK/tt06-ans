@@ -65,7 +65,7 @@ class AnsHardware:
 
         self.shift = shift
 
-    def reset_state(self):
+    def reset(self):
         self.state = self.l * self.M
 
     def load_count(self, symbol, count):
@@ -128,7 +128,7 @@ class AnsLibrary:
 
     def encode_data(self, data: bytes) -> (int, bytes):
         output = []
-        self.hw.reset_state()
+        self.hw.reset()
 
         for symbol in data:
             bits = self.hw.encode(symbol)
