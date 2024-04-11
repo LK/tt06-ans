@@ -22,6 +22,12 @@ generate for (i = 0; i < `SYM_COUNT; i = i + 1) begin
   assign counts_unpacked[i*(`CNT_WIDTH) +: `CNT_WIDTH] = counts_reg[i];
 end endgenerate
 
+// Input interface works in this order:
+// 1. input_ready goes high
+// 2. Wait for input_valid to go high
+// 3. Process input
+// 4. input_ready goes low
+// 5. Wait for input_valid to go low
 always @(posedge clk or negedge rst_n) begin
   if (!rst_n) begin
     in_rdy <= 1'b1;

@@ -8,6 +8,7 @@
 `define STATE_WIDTH 16
 `define SYM_COUNT (2**`SYM_WIDTH)
 `define CNT_WIDTH 4
+`define STATE_WIDTH 16
 
 module tt_um_lk_ans_top (
     input  wire [7:0] ui_in,    // Dedicated inputs
@@ -108,6 +109,7 @@ wire [`SYM_WIDTH-1:0] decoder_out;
 ans_decoder decoder (
   .in(in),
   .out(decoder_out),
+  .counts_unpacked(counts_unpacked),
   .in_vld(in_vld),
   .in_rdy(decoder_in_rdy),
   .out_vld(decoder_out_vld),
