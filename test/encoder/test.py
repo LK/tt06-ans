@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import sys
+from random import randint
 sys.path.append("..")
 
 import cocotb
@@ -52,7 +53,7 @@ async def test_encoder_state(dut):
     cocotb.start_soon(clock.start())
 
     # Setup the data model
-    data_in = [x for x in range(16)]
+    data_in = [randint(1, 15) for x in range(16)]
     model = setup_model(data_in)
     
     # Reset model
