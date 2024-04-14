@@ -1,8 +1,50 @@
+module ans_icdf_lookup (
+  input wire [(`CNT_WIDTH + `SYM_WIDTH)-1:0] in,
+  input wire [((`CNT_WIDTH + `SYM_WIDTH) * `SYM_COUNT)-1:0] cumulative_unpacked,
+  input wire start,
+  output reg [`SYM_WIDTH-1:0] out,
+  output reg done,
+
+  input wire clk,
+  input wire rst_n
+);
+
+wire [(`CNT_WIDTH + `SYM_WIDTH)-1:0] cumulative[`SYM_COUNT-1:0];
+
+genvar j;
+generate for (j = 0; j < `SYM_COUNT; j = j + 1) begin
+  assign cumulative[j] = cumulative_unpacked[j*(`CNT_WIDTH + `SYM_WIDTH) +: (`CNT_WIDTH + `SYM_WIDTH)];
+end endgenerate
+
+reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] idx;
+
+// TODO: do this in fewer clock cycles
+always @(posedge clk or negedge rst_n) begin
+  if (!rst_n) begin
+    done <= 1'b0;
+    out <= 0;
+    idx <= 0;
+  end else if (start && !done) begin
+    if (cumulative[idx] > in) begin
+      out <= idx;
+    end else begin 
+      idx <= idx + 1;
+    end
+  end else if (done) begin
+    idx <= 0;
+    done <= 0;
+    out <= 0;
+  end
+end
+
+endmodule
+
 module ans_decoder (
   input wire [`SYM_WIDTH-1:0] in,
   output reg [`SYM_WIDTH-1:0] out,
 
   input wire [(`CNT_WIDTH * `SYM_COUNT)-1:0] counts_unpacked,
+  input wire [((`CNT_WIDTH + `SYM_WIDTH) * `SYM_COUNT)-1:0] cumulative_unpacked,
 
   input wire in_vld,
   output reg in_rdy,
@@ -17,13 +59,18 @@ module ans_decoder (
 
 typedef enum reg [1:0] {
     StateReadingState = 2'b00,
-    StateReadingValue = 2'b01,
-    StateWritingValue = 2'b10
+    StateWritingValue = 2'b01,
+    StateUpdatingState = 2'b10,
+    StateReadingValue = 2'b11
 } state_t;
 
 state_t current_state, next_state;
 
 wire [`CNT_WIDTH-1:0] counts[`SYM_COUNT-1:0];
+wire [(`CNT_WIDTH + `SYM_WIDTH)-1:0] cumulative[`SYM_COUNT-1:0];
+
+wire [(`CNT_WIDTH + `SYM_WIDTH)-1:0] max_cumulative;
+assign max_cumulative = cumulative[`SYM_COUNT-1];
 
 reg [`STATE_WIDTH-1:0] decoder_state;
 reg [`CNT_WIDTH-1:0] decoder_state_ptr;
@@ -32,6 +79,26 @@ genvar i;
 generate for (i = 0; i < `SYM_COUNT; i = i + 1) begin
   assign counts[i] = counts_unpacked[i*(`CNT_WIDTH) +: `CNT_WIDTH];
 end endgenerate
+
+genvar j;
+generate for (j = 0; j < `SYM_COUNT; j = j + 1) begin
+  assign cumulative[j] = cumulative_unpacked[j*(`CNT_WIDTH + `SYM_WIDTH) +: (`CNT_WIDTH + `SYM_WIDTH)];
+end endgenerate
+
+reg start_icdf_lookup;
+wire icdf_done;
+reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] icdf_in;
+wire [`SYM_WIDTH-1:0] icdf_out;
+
+ans_icdf_lookup icdf_lookup (
+  .in(icdf_in),
+  .cumulative_unpacked(cumulative_unpacked),
+  .start(start_icdf_lookup),
+  .out(icdf_out),
+  .done(icdf_done),
+  .clk(clk),
+  .rst_n(rst_n)
+);
 
 always @(posedge clk or negedge rst_n) begin
   if (!rst_n) begin
@@ -47,6 +114,7 @@ always @(posedge clk or negedge rst_n) begin
     out_vld <= 1'b0;
     in_rdy <= 1'b1;
     out <= 0;
+    start_icdf_lookup <= 1'b0;
   end else if (en) begin
     case (current_state)
       StateReadingState: begin
@@ -55,11 +123,46 @@ always @(posedge clk or negedge rst_n) begin
           decoder_state_ptr <= decoder_state_ptr + 1;
           in_rdy <= 1'b0;
         end else if (!in_vld && !in_rdy) begin
+          in_rdy <= 1'b1;
           if (decoder_state_ptr == `STATE_WIDTH-1) begin
-            next_state <= StateReadingValue;
-          end else begin
-            in_rdy <= 1'b1;
+            next_state <= StateWritingValue;
           end
+        end
+      end
+      StateWritingValue: begin
+        if (out_vld && out_rdy) begin
+          next_state <= StateUpdatingState;
+        end else if (!out_vld && !out_rdy) begin
+          if (!start_icdf_lookup) begin
+            icdf_in <= decoder_state;
+            start_icdf_lookup <= 1'b1;
+          end else if (icdf_done) begin
+            out <= icdf_out;
+            out_vld <= 1'b0;
+            start_icdf_lookup <= 1'b0;
+            next_state <= StateUpdatingState;
+          end
+        end
+      end
+      StateUpdatingState: begin
+        if (out_vld) begin
+          decoder_state <= (decoder_state / max_cumulative) * counts[out] + decoder_state % max_cumulative - cumulative[out];
+          out_vld <= 1'b0;
+        end else begin
+          if (decoder_state < max_cumulative) begin
+            next_state <= StateReadingValue;
+            in_rdy <= 1'b1;
+          end else begin
+            next_state <= StateWritingValue;
+          end
+        end
+      end
+      StateReadingValue: begin
+        if (!in_vld && !in_rdy) begin
+          next_state <= StateWritingValue;
+        end else if (in_vld && in_rdy) begin
+          decoder_state <= (decoder_state << `SYM_WIDTH) + in;
+          in_rdy <= 1'b0;
         end
       end
     endcase
