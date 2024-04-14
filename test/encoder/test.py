@@ -71,7 +71,7 @@ async def test_encoder_state(dut):
         dut.total_count.value = model.total_count
 
         dut.in_vld.value = 1
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 2)
         dut.in_vld.value = 0
         await ClockCycles(dut.clk, 1)
 
