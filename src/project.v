@@ -72,12 +72,12 @@ wire [((`CNT_WIDTH + `SYM_WIDTH) * `SYM_COUNT)-1:0] cumulative_unpacked;
 
 genvar i;
 generate for (i = 0; i < `SYM_COUNT; i = i + 1) begin
-  assign counts_unpacked[i*`CNT_WIDTH +: `CNT_WIDTH] = counts[i];
+  assign counts[i] = counts_unpacked[i*`CNT_WIDTH +: `CNT_WIDTH];
 end endgenerate
 
 genvar j;
 generate for (j = 0; j < `SYM_COUNT; j = j + 1) begin
-  assign cumulative_unpacked[j*(`CNT_WIDTH + `SYM_WIDTH) +: (`CNT_WIDTH + `SYM_WIDTH)] = cumulative[j];
+  assign cumulative[j] = cumulative_unpacked[j*(`CNT_WIDTH + `SYM_WIDTH) +: (`CNT_WIDTH + `SYM_WIDTH)];
 end endgenerate
 
 wire loader_in_rdy;
