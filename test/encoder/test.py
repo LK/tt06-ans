@@ -34,7 +34,7 @@ async def test_encoder_reset(dut):
     dut._log.info("Reset")
     dut.ena.value = 1
     dut.rst_n.value = 0
-    dut.total_count.value = model.M
+    dut.total_count.value = model.total_count
     dut.rst_n.value = 0
     await ClockCycles(dut.clk, 10)
     dut.rst_n.value = 1
@@ -65,7 +65,7 @@ async def test_encoder_state(dut):
 
         dut.s_count.value = model.counts[symbol]
         dut.s_cumulative.value = model.cumulative[symbol]
-        dut.total_count.value = model.M
+        dut.total_count.value = model.total_count
         
         dut.in_vld.value = 1
         await ClockCycles(dut.clk, 1)

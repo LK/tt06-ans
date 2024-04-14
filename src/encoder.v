@@ -20,7 +20,7 @@ module ans_encoder (
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       // Reset all signals.
-      state_reg <= total_count;
+      state_reg <= total_count + 1;
       out_vld <= 1'b0;
       in_rdy <= 1'b1;
       out <= 0;
