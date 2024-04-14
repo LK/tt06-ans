@@ -26,30 +26,50 @@ def D_rANS(state, symbol_counts):
     return s, prev_state
 
 
-def Streaming_rANS_encoder(state, symbol, symbol_counts, range_factor, shift):
+def Streaming_rANS_encoder(state, symbol, symbol_counts, shift):
     bitstream = []
     mask = (1 << shift) - 1
-    adjust = 1 << (shift - 1)
+    adjust = 1 << (shift)
 
-    while state >= (adjust * 2 * range_factor * symbol_counts[symbol]):
+    while state >= (adjust * symbol_counts[symbol]):
         bitstream.append(state & mask)
         state = state >> shift
 
     state = C_rANS(symbol, state, symbol_counts)
-
     return state, bitstream
 
 
-def Streaming_rANS_decoder(state, bitstream, symbol_counts, range_factor, shift):
+def Streaming_rANS_decoder(state, bitstream, symbol_counts, shift):
     total_counts = np.sum(symbol_counts)
-
     s_decoded, state = D_rANS(state, symbol_counts)
 
-    while state < (range_factor * total_counts):
+    while state < (total_counts):
         bits = bitstream.pop()
         state = (state << shift) + bits
 
     return s_decoded, state
+
+
+def rANS_encode(data: list, counts: list, shift=1):
+    state = sum(counts) + 1
+    output = []
+
+    for symbol in data:
+        state, bitstream = Streaming_rANS_encoder(state, symbol, counts, shift)
+        output.extend(bitstream)
+
+    return state, output
+
+
+def rANS_decode(state, counts, compressed, shift=1):
+    output = []
+    stop = sum(counts) + 1
+
+    while compressed or state > stop:
+        symbol, state = Streaming_rANS_decoder(state, compressed, counts, shift)
+        output.append(symbol)
+
+    return list(reversed(output))
 
 
 class AnsHardware:
@@ -57,19 +77,16 @@ class AnsHardware:
 
     def __init__(self, alphabet_size=256, shift=8) -> None:
         self.state = 0
-        self.l = 1
-        self.M = 0
-
+        self.total_count = 0
         self.counts = [0] * alphabet_size
         self.cumulative = [0] * (alphabet_size + 1)
-
         self.shift = shift
 
-    def reset_state(self):
-        self.state = self.l * self.M
+    def reset(self):
+        self.state = self.total_count + 1
 
     def load_count(self, symbol, count):
-        self.M += count
+        self.total_count += count
         self.counts[symbol] = count
         for n in range(symbol, len(self.counts)):
             self.cumulative[n + 1] += count
@@ -77,7 +94,9 @@ class AnsHardware:
     def c_rANS(self, state, symbol):
         s_count = self.counts[symbol]
         s_cumulative = self.cumulative[symbol]
-        next_state = (state // s_count) * self.M + s_cumulative + (state % s_count)
+        next_state = (
+            (state // s_count) * self.total_count + s_cumulative + (state % s_count)
+        )
         return next_state
 
     def d_rANS(self, state):
@@ -87,10 +106,12 @@ class AnsHardware:
                 if y < _s:
                     return i - 1
 
-        slot = state % self.M
+        slot = state % self.total_count
         symbol = cumul_inverse(slot)
         self.state = (
-            (state // self.M) * self.counts[symbol] + slot - self.cumulative[symbol]
+            (state // self.total_count) * self.counts[symbol]
+            + slot
+            - self.cumulative[symbol]
         )
         return symbol
 
@@ -98,18 +119,19 @@ class AnsHardware:
         mask = (1 << self.shift) - 1
         step = 1 << (self.shift)
 
-        if self.state >= (step * self.l * self.counts[symbol]):
+        while self.state >= (step * self.counts[symbol]):
             output = self.state & mask
             self.state = self.state >> self.shift
             return output
 
         self.state = self.c_rANS(self.state, symbol)
+
         return None
 
     def decode(self, bitstream):
         s_decoded = self.d_rANS(self.state)
-        
-        while self.state < (self.l * self.M):
+
+        while self.state < self.total_count:
             bits = bitstream.pop()
             self.state = (self.state << self.shift) + bits
 
@@ -119,8 +141,8 @@ class AnsHardware:
 class AnsLibrary:
     """Models a processor interacting with a memory mapped ANS peripheral"""
 
-    def __init__(self) -> None:
-        self.hw = AnsHardware()
+    def __init__(self, alphabet_size=256, shift=8) -> None:
+        self.hw = AnsHardware(alphabet_size, shift)
 
     def set_counts(self, symbol_counts: list):
         for symbol, count in enumerate(symbol_counts):
@@ -128,13 +150,16 @@ class AnsLibrary:
 
     def encode_data(self, data: bytes) -> (int, bytes):
         output = []
-        self.hw.reset_state()
+        self.hw.reset()
 
         for symbol in data:
-            bits = self.hw.encode(symbol)
-            while bits:  # Valid signal
-                output.append(bits)
-                bits = self.hw.encode(symbol)
+            bits = []
+            out = self.hw.encode(symbol)
+            while out is not None:  # Valid signal
+                bits.append(out)
+                out = self.hw.encode(symbol)
+            print(self.hw.state, bits)
+            output.extend(bits)
 
         return self.hw.state, bytes(output)
 
@@ -143,7 +168,7 @@ class AnsLibrary:
         self.hw.state = state
         bitstream = list(compressed)
 
-        while bitstream or self.hw.state != (self.hw.l * self.hw.M):
+        while bitstream or self.hw.state > (self.hw.total_count + 1):
             symbol = self.hw.decode(bitstream)
             output.append(symbol)
 
