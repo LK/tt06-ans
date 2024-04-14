@@ -39,6 +39,8 @@ end
 
 endmodule
 
+
+
 module ans_decoder (
   input wire [`SYM_WIDTH-1:0] in,
   output reg [`SYM_WIDTH-1:0] out,
@@ -90,6 +92,9 @@ wire icdf_done;
 reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] icdf_in;
 wire [`SYM_WIDTH-1:0] icdf_out;
 
+reg [`STATE_WIDTH-1:0] temp_decoder_state;
+reg [1:0] decoder_update_step;
+
 ans_icdf_lookup icdf_lookup (
   .in(icdf_in),
   .cumulative_unpacked(cumulative_unpacked),
@@ -115,6 +120,8 @@ always @(posedge clk or negedge rst_n) begin
     in_rdy <= 1'b1;
     out <= 0;
     start_icdf_lookup <= 1'b0;
+    temp_decoder_state <= 1'b0;
+    decoder_update_step <= 1'b0;
   end else if (en) begin
     case (current_state)
       StateReadingState: begin
@@ -146,8 +153,20 @@ always @(posedge clk or negedge rst_n) begin
       end
       StateUpdatingState: begin
         if (out_vld) begin
-          decoder_state <= (decoder_state / max_cumulative) * counts[out] + decoder_state % max_cumulative - cumulative[out];
-          out_vld <= 1'b0;
+          if (decoder_update_step == 2'b00) begin
+            temp_decoder_state <= (decoder_state / max_cumulative);
+            decoder_update_step <= 1'b1;
+          end else if (decoder_update_step == 2'b1) begin
+            temp_decoder_state <= temp_decoder_state * counts[out];
+            decoder_update_step <= 1'b10;
+          end else if (decoder_update_step == 2'b01) begin
+            temp_decoder_state <= temp_decoder_state + decoder_state % max_cumulative - cumulative[out];
+            decoder_update_step <= 1'b11;
+          end else begin
+            decoder_state <= temp_decoder_state;
+            decoder_update_step <= 1'b00;
+            out_vld <= 1'b0;
+          end
         end else begin
           if (decoder_state < max_cumulative) begin
             next_state <= StateReadingValue;
