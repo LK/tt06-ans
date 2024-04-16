@@ -106,10 +106,6 @@ ans_icdf_lookup icdf_lookup (
   .rst_n(rst_n)
 );
 
-always @(posedge clk) begin
-  current_state <= next_state;
-end
-
 always @(posedge clk or negedge rst_n) begin
   if (!rst_n) begin
     // Reset all signals.
@@ -124,6 +120,7 @@ always @(posedge clk or negedge rst_n) begin
     current_state <= StateReadingState;
     next_state <= StateReadingState;
   end else if (ena) begin
+    current_state <= next_state;
     case (current_state)
       StateReadingState: begin
         if (in_vld && in_rdy) begin
