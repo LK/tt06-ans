@@ -28,10 +28,10 @@ module ans_encoder (
       in_rdy <= 1'b1;
       out <= 0;
       state <= IDLE;
-    end else begin
+    end else if (ena) begin
       case (state)
         IDLE: begin
-          if (ena && in_vld && in_rdy) begin
+          if (in_vld && in_rdy) begin
             state <= PROCESS;
           end
         end
@@ -50,7 +50,7 @@ module ans_encoder (
           end
         end
         OUTPUT: begin
-          if (ena && out_vld && out_rdy) begin
+          if (out_vld && out_rdy) begin
             // Output data has been read, prepare to go back to reading an input.
             out_vld <= 1'b0;
             in_rdy  <= 1'b1;
@@ -59,7 +59,7 @@ module ans_encoder (
         end
         WAIT_FOR_READ: begin
           // Wait for the next input to be ready.
-          if (ena && in_vld) begin
+          if (in_vld) begin
             state <= PROCESS;
           end else begin
             state <= IDLE;
