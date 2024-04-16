@@ -109,7 +109,7 @@ ans_icdf_lookup icdf_lookup (
 always @(posedge clk or negedge rst_n) begin
   if (!rst_n) begin
     current_state <= StateReadingState;
-    next_state <= StateReadingState;
+    // next_state <= StateReadingState;
   end else begin
     current_state <= next_state;
   end
