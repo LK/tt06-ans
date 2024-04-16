@@ -27,6 +27,7 @@ always @(posedge clk or negedge rst_n) begin
   end else if (start && !done) begin
     if (cumulative[idx] > in) begin
       out <= idx;
+      done <= 1'b1;
     end else begin 
       idx <= idx + 1;
     end
@@ -55,7 +56,7 @@ module ans_decoder (
   input wire out_rdy,
 
   input wire clk,
-  input wire en,
+  input wire ena,
   input wire rst_n
 );
 
@@ -108,6 +109,7 @@ ans_icdf_lookup icdf_lookup (
 always @(posedge clk or negedge rst_n) begin
   if (!rst_n) begin
     current_state <= StateReadingState;
+    next_state <= StateReadingState;
   end else begin
     current_state <= next_state;
   end
@@ -119,10 +121,12 @@ always @(posedge clk or negedge rst_n) begin
     out_vld <= 1'b0;
     in_rdy <= 1'b1;
     out <= 0;
-    start_icdf_lookup <= 1'b0;
-    temp_decoder_state <= 1'b0;
-    decoder_update_step <= 1'b0;
-  end else if (en) begin
+    start_icdf_lookup <= 0;
+    temp_decoder_state <= 0;
+    decoder_update_step <= 0;
+    decoder_state_ptr <= 0;
+    icdf_in <= 0;
+  end else if (ena) begin
     case (current_state)
       StateReadingState: begin
         if (in_vld && in_rdy) begin
@@ -130,45 +134,47 @@ always @(posedge clk or negedge rst_n) begin
           decoder_state_ptr <= decoder_state_ptr + 1;
           in_rdy <= 1'b0;
         end else if (!in_vld && !in_rdy) begin
-          in_rdy <= 1'b1;
-          if (decoder_state_ptr == `STATE_WIDTH-1) begin
+          if (decoder_state_ptr == `STATE_WIDTH / 4) begin
             next_state <= StateWritingValue;
+          end else begin
+            in_rdy <= 1'b1;
           end
         end
       end
       StateWritingValue: begin
-        if (out_vld && out_rdy) begin
-          next_state <= StateUpdatingState;
-        end else if (!out_vld && !out_rdy) begin
+        if (!out_vld && !out_rdy) begin
           if (!start_icdf_lookup) begin
-            icdf_in <= decoder_state;
+            icdf_in <= decoder_state % max_cumulative;
             start_icdf_lookup <= 1'b1;
           end else if (icdf_done) begin
             out <= icdf_out;
-            out_vld <= 1'b0;
+            out_vld <= 1'b1;
             start_icdf_lookup <= 1'b0;
-            next_state <= StateUpdatingState;
           end
+        end else if (out_vld && out_rdy) begin
+          next_state <= StateUpdatingState;
+          decoder_update_step <= 1'b00;
+          out_vld <= 1'b0;
         end
       end
       StateUpdatingState: begin
-        if (out_vld) begin
-          if (decoder_update_step == 2'b00) begin
-            temp_decoder_state <= (decoder_state / max_cumulative);
-            decoder_update_step <= decoder_update_step + 1'b1;
-          end else if (decoder_update_step == 2'b01) begin
-            temp_decoder_state <= temp_decoder_state * counts[out];
-            decoder_update_step <= decoder_update_step + 1'b1;
-          end else if (decoder_update_step == 2'b10) begin
-            temp_decoder_state <= temp_decoder_state + decoder_state % max_cumulative - cumulative[out];
-            decoder_update_step <= decoder_update_step + 1'b1;
+        if (decoder_update_step == 2'b00) begin
+          temp_decoder_state <= (decoder_state / max_cumulative);
+          decoder_update_step <= decoder_update_step + 1'b1;
+        end else if (decoder_update_step == 2'b01) begin
+          temp_decoder_state <= temp_decoder_state * counts[out];
+          decoder_update_step <= decoder_update_step + 1'b1;
+        end else if (decoder_update_step == 2'b10) begin
+          if (out == 0) begin
+            temp_decoder_state <= temp_decoder_state + decoder_state % max_cumulative;
           end else begin
-            decoder_state <= temp_decoder_state;
-            decoder_update_step <= 1'b00;
-            out_vld <= 1'b0;
+            temp_decoder_state <= temp_decoder_state + decoder_state % max_cumulative - cumulative[out - 1];
           end
+          decoder_update_step <= decoder_update_step + 1'b1;
         end else begin
-          if (decoder_state < max_cumulative) begin
+          decoder_state <= temp_decoder_state;
+
+          if (temp_decoder_state < max_cumulative) begin
             next_state <= StateReadingValue;
             in_rdy <= 1'b1;
           end else begin

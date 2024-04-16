@@ -125,7 +125,7 @@ ans_decoder decoder (
   .out_vld(decoder_out_vld),
   .out_rdy(out_rdy),
   .clk(clk),
-  .en(mode_dec),
+  .ena(mode_dec),
   .rst_n(rst_n)
 );
 
