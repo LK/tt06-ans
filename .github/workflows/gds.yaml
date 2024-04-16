@@ -36,7 +36,8 @@ jobs:
         uses: TinyTapeout/tt-gds-action/gl_test@tt06
 
   viewer:
-    # needs: gds
+    needs: gds
+    if: always()
     runs-on: ubuntu-latest
     permissions:
       pages: write      # to deploy to Pages
