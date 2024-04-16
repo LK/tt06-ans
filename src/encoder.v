@@ -43,7 +43,7 @@ module ans_encoder (
             out_vld <= 1'b1;
             state <= OUTPUT;
           end else begin
-            state_reg <= ((state_reg / s_count) * total_count) + s_cumulative + (state_reg % s_count);
+            state_reg <= 0; // ((state_reg / s_count) * total_count) + s_cumulative + (state_reg % s_count);
             in_rdy <= 1'b1;
             out_vld <= 1'b0;
             state <= IDLE;
