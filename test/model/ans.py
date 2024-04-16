@@ -108,13 +108,6 @@ class AnsHardware:
 
         slot = state % self.total_count
         symbol = cumul_inverse(slot)
-        print('model: symbol:', symbol)
-        print('model: slot: ', slot)
-        print('model: state1: ', (state // self.total_count))
-        print('model: state2: ', (state // self.total_count) * self.counts[symbol])
-        print('model: state3: ', (state // self.total_count) * self.counts[symbol]
-            + slot
-            - self.cumulative[symbol])
 
         self.state = (
             (state // self.total_count) * self.counts[symbol]
@@ -141,8 +134,6 @@ class AnsHardware:
 
         while self.state < self.total_count:
             bits = bitstream.pop()
-            print(bitstream)
-            print(f'model: reading input...{bits}')
             self.state = (self.state << self.shift) + bits
 
         return s_decoded

@@ -12,7 +12,7 @@ from cocotb.triggers import ClockCycles
 
 import model.ans as ans
 
-# @cocotb.test()
+@cocotb.test()
 async def test_decoder_reset(dut):
     dut._log.info("Start")
     clock = Clock(dut.clk, 10, units="us")
@@ -56,7 +56,7 @@ async def decoder_read_state(dut, state):
     assert dut.decoder.current_state.value == 0b1
     assert dut.decoder.decoder_state.value == state
 
-# @cocotb.test()
+@cocotb.test()
 async def test_decoder_read_state(dut):
     dut._log.info("Start")
     clock = Clock(dut.clk, 10, units="us")
@@ -95,20 +95,20 @@ async def test_decoder_decode(dut):
         assert dut.decoder.counts[i].value == counts[i]
         assert dut.decoder.cumulative[i].value == sum(counts[:i + 1])
 
-    print(dut.decoder.counts.value)
-    print(dut.decoder.cumulative.value)
-
     bitstream_model = list(bitstream)
     bitstream_hw = list(bitstream)
-    output = []
+    output_model = []
+    output_hw = []
     while bitstream_model or lib.hw.state > (lib.hw.total_count + 1):
         symbol = lib.hw.decode(bitstream_model)
-        output.append(symbol)
+        output_model.append(symbol)
 
         await ClockCycles(dut.clk, 20)
         
         assert dut.out_vld.value == 1
         assert dut.out_reg.value == symbol
+
+        output_hw.append(dut.out_reg.value)
 
         dut.out_rdy.value = 1
 
@@ -124,8 +124,6 @@ async def test_decoder_decode(dut):
             dut.in_vld.value = 1
 
             await ClockCycles(dut.clk, 2)
-            print(bitstream_hw)
-            print(f'hw: reading input...{dut.in_reg.value}')
 
             assert dut.decoder.in_rdy.value == 0
             dut.in_vld.value = 0
@@ -134,5 +132,4 @@ async def test_decoder_decode(dut):
 
         assert dut.decoder.decoder_state.value == lib.hw.state
 
-    # await test_decoder_reset(dut)
-    # await decoder_read_state(dut, randint(0, 2**16 - 1))
+    assert output_model == output_hw
