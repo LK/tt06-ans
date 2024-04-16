@@ -106,13 +106,8 @@ ans_icdf_lookup icdf_lookup (
   .rst_n(rst_n)
 );
 
-always @(posedge clk or negedge rst_n) begin
-  if (!rst_n) begin
-    current_state <= StateReadingState;
-    // next_state <= StateReadingState;
-  end else begin
-    current_state <= next_state;
-  end
+always @(posedge clk) begin
+  current_state <= next_state;
 end
 
 always @(posedge clk or negedge rst_n) begin
@@ -126,6 +121,8 @@ always @(posedge clk or negedge rst_n) begin
     decoder_update_step <= 0;
     decoder_state_ptr <= 0;
     icdf_in <= 0;
+    current_state <= StateReadingState;
+    next_state <= StateReadingState;
   end else if (ena) begin
     case (current_state)
       StateReadingState: begin
@@ -153,7 +150,7 @@ always @(posedge clk or negedge rst_n) begin
           end
         end else if (out_vld && out_rdy) begin
           next_state <= StateUpdatingState;
-          decoder_update_step <= 1'b00;
+          decoder_update_step <= 2'b00;
           out_vld <= 1'b0;
         end
       end

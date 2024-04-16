@@ -18,7 +18,7 @@ module ans_loader (
 reg [`CNT_WIDTH-1:0] counts_reg[`SYM_COUNT-1:0];
 reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] cumulative_reg[`SYM_COUNT-1:0];
 reg [`SYM_WIDTH-1:0] counter;
-reg [`SYM_WIDTH-1:0] running_sum;
+reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] running_sum;
 
 genvar i;
 generate for (i = 0; i < `SYM_COUNT; i = i + 1) begin
