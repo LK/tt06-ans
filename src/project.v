@@ -89,8 +89,8 @@ wire [`SYM_WIDTH-1:0] encoder_out;
 
 ans_encoder encoder (
   .s_count(counts[in]),
-  .s_cumulative(256), // TODO(compute based on symbol)
-  .total_count(256), // TODO(compute based on counts)
+  .s_cumulative(0), // TODO(compute based on symbol)
+  .total_count(0), // TODO(compute based on counts)
   .in_vld(in_vld),
   .in_rdy(encoder_in_rdy),
   .out(encoder_out),
