@@ -107,23 +107,23 @@ wire decoder_in_rdy;
 wire decoder_out_vld;
 wire [`SYM_WIDTH-1:0] decoder_out;
 
-// ans_decoder decoder (
-//   .in(in),
-//   .out(decoder_out),
+ans_decoder decoder (
+  .in(in),
+  .out(decoder_out),
 
-//   .read_type(read_type),
-//   .read_query(read_query),
-//   .read_result(read_result),
-//   .read_rdy(read_rdy),
+  .read_type(read_type),
+  .read_query(read_query),
+  .read_result(read_result),
+  .read_rdy(read_rdy),
 
-//   .in_vld(in_vld),
-//   .in_rdy(decoder_in_rdy),
-//   .out_vld(decoder_out_vld),
-//   .out_rdy(out_rdy),
-//   .clk(clk),
-//   .ena(mode_dec),
-//   .rst_n(rst_n)
-// );
+  .in_vld(in_vld),
+  .in_rdy(decoder_in_rdy),
+  .out_vld(decoder_out_vld),
+  .out_rdy(out_rdy),
+  .clk(clk),
+  .ena(mode_dec),
+  .rst_n(rst_n)
+);
 
 assign in_rdy = mode_load ? loader_in_rdy : mode_enc ? encoder_in_rdy : mode_dec ? decoder_in_rdy : 1'b0;
 assign out_vld = mode_enc ? encoder_out_vld : mode_dec ? decoder_out_vld : 1'b0;
