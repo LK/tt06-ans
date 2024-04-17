@@ -1,5 +1,4 @@
 module ans_encoder (
-
     input wire [`CNT_WIDTH-1:0] s_count,
     input wire [`SYM_WIDTH + `CNT_WIDTH - 1:0] s_cumulative,
     input wire [`STATE_WIDTH-1:0] total_count,
@@ -43,7 +42,7 @@ module ans_encoder (
             out_vld <= 1'b1;
             state <= OUTPUT;
           end else begin
-            state_reg <= (s_count * total_count); // ((state_reg / s_count) * total_count) + s_cumulative + (state_reg % s_count);
+            state_reg <= (s_count * total_count) + s_cumulative; // ((state_reg / s_count) * total_count) + s_cumulative + (state_reg % s_count);
             in_rdy <= 1'b1;
             out_vld <= 1'b0;
             state <= IDLE;
