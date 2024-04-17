@@ -64,30 +64,21 @@ wire mode_enc = cmd == 2'b01;
 wire mode_dec = cmd == 2'b10;
 wire mode_load = cmd == 2'b11;
 
-wire [`CNT_WIDTH-1:0] counts[`SYM_COUNT-1:0];
-wire [(`CNT_WIDTH * `SYM_COUNT)-1:0] counts_unpacked;
-
-wire [(`CNT_WIDTH + `SYM_WIDTH)-1:0] cumulative[`SYM_COUNT-1:0];
-wire [((`CNT_WIDTH + `SYM_WIDTH) * `SYM_COUNT)-1:0] cumulative_unpacked;
-
-genvar i;
-generate for (i = 0; i < `SYM_COUNT; i = i + 1) begin
-  assign counts[i] = counts_unpacked[i*`CNT_WIDTH +: `CNT_WIDTH];
-end endgenerate
-
-genvar j;
-generate for (j = 0; j < `SYM_COUNT; j = j + 1) begin
-  assign cumulative[j] = cumulative_unpacked[j*(`CNT_WIDTH + `SYM_WIDTH) +: (`CNT_WIDTH + `SYM_WIDTH)];
-end endgenerate
-
-wire loader_in_rdy;
+wire [1:0] read_type;
+wire [(`CNT_WIDTH + `SYM_WIDTH)-1:0] read_query;
+wire [(`CNT_WIDTH + `SYM_WIDTH)-1:0] read_result;
+wire read_rdy;
 
 ans_loader loader (
   .in(in),
-  .counts_unpacked(counts_unpacked),
-  .cumulative_unpacked(cumulative_unpacked),
   .in_vld(in_vld),
   .in_rdy(loader_in_rdy),
+
+  .read_type(read_type),
+  .read_query(read_query),
+  .read_result(read_result),
+  .read_rdy(read_rdy),
+
   .clk(clk),
   .en(mode_load),
   .rst_n(rst_n)
@@ -118,8 +109,12 @@ wire [`SYM_WIDTH-1:0] decoder_out;
 ans_decoder decoder (
   .in(in),
   .out(decoder_out),
-  .counts_unpacked(counts_unpacked),
-  .cumulative_unpacked(cumulative_unpacked),
+
+  .read_type(read_type),
+  .read_query(read_query),
+  .read_result(read_result),
+  .read_rdy(read_rdy),
+
   .in_vld(in_vld),
   .in_rdy(decoder_in_rdy),
   .out_vld(decoder_out_vld),

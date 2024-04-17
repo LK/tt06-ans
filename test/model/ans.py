@@ -109,6 +109,16 @@ class AnsHardware:
         slot = state % self.total_count
         symbol = cumul_inverse(slot)
 
+        print('old state: ', state)
+        print('new state: ', (
+            (state // self.total_count) * self.counts[symbol]
+            + slot
+            - self.cumulative[symbol]
+        ))
+        print('counts: ', self.counts[symbol])
+        print('cumulative: ', self.cumulative[symbol])
+        print('slot: ', slot)
+        
         self.state = (
             (state // self.total_count) * self.counts[symbol]
             + slot

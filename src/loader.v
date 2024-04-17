@@ -1,14 +1,21 @@
+typedef enum reg [1:0] {
+  READ_TYPE_NONE = 2'b00,
+  READ_TYPE_PMF = 2'b01,
+  READ_TYPE_CMF = 2'b10,
+  READ_TYPE_ICMF = 2'b11
+} read_type_t;
+
+
 module ans_loader (
   input wire [`CNT_WIDTH-1:0] in,
   
-  // Yosys doesn't support arrays in ports (sad), so we need to unpack/repack
-  // the array as suggested on reddit:
-  // https://old.reddit.com/r/yosys/comments/44d7v6/arrays_as_inputs_to_modules/
-  output wire [(`CNT_WIDTH * `SYM_COUNT)-1:0] counts_unpacked,
-  output wire [((`CNT_WIDTH + `SYM_WIDTH) * `SYM_COUNT)-1:0] cumulative_unpacked,
-
   input wire in_vld,
   output reg in_rdy,
+
+  input wire [1:0] read_type,
+  input wire [(`CNT_WIDTH + `SYM_WIDTH)-1:0] read_query,
+  output reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] read_result,
+  output reg read_rdy,
 
   input wire clk,
   input wire en,
@@ -16,19 +23,45 @@ module ans_loader (
 );
 
 reg [`CNT_WIDTH-1:0] counts_reg[`SYM_COUNT-1:0];
-reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] cumulative_reg[`SYM_COUNT-1:0];
 reg [`SYM_WIDTH-1:0] counter;
-reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] running_sum;
 
-genvar i;
-generate for (i = 0; i < `SYM_COUNT; i = i + 1) begin
-  assign counts_unpacked[i*(`CNT_WIDTH) +: `CNT_WIDTH] = counts_reg[i];
-end endgenerate
+reg [`SYM_WIDTH-1:0] query_idx;
 
-genvar j;
-generate for (j = 0; j < `SYM_COUNT; j = j + 1) begin
-  assign cumulative_unpacked[j*(`CNT_WIDTH + `SYM_WIDTH) +: `CNT_WIDTH + `SYM_WIDTH] = cumulative_reg[j];
-end endgenerate
+always @(posedge clk or negedge rst_n) begin
+  if (!rst_n) begin
+    read_rdy <= 0;
+    read_result <= 0;
+    query_idx <= 0;
+  end else if (read_type != READ_TYPE_NONE && !read_rdy) begin
+  case (read_type)
+    READ_TYPE_PMF: begin
+      read_result <= counts_reg[read_query[`SYM_WIDTH-1:0]];
+      read_rdy <= 1'b1;
+    end
+    READ_TYPE_CMF: begin
+      read_result <= read_result + counts_reg[query_idx];
+      if (query_idx == read_query[`SYM_WIDTH-1:0]) begin
+        read_rdy <= 1'b1;
+      end else begin
+        query_idx <= query_idx + 1'b1;
+      end
+    end
+    READ_TYPE_ICMF: begin
+      if (read_result > read_query) begin
+        read_result <= query_idx - 1;
+        read_rdy <= 1'b1;
+      end else begin
+        read_result <= read_result + counts_reg[query_idx];
+        query_idx <= query_idx + 1'b1;
+      end
+    end
+  endcase
+  end else if (read_type == READ_TYPE_NONE || read_rdy) begin
+    read_rdy <= 0;
+    read_result <= 0;
+    query_idx <= 0;
+  end
+end
 
 // Input interface works in this order:
 // 1. input_ready goes high
@@ -41,14 +74,10 @@ always @(posedge clk or negedge rst_n) begin
     in_rdy <= 1'b1;
     for (integer i = 0; i < `SYM_COUNT; i = i + 1) begin
       counts_reg[i] <= 0;
-      cumulative_reg[i] <= 0;
     end
     counter <= 0;
-    running_sum <= 0;
   end else if (en && in_rdy && in_vld) begin
     counts_reg[counter] <= in;
-    running_sum <= running_sum + in;
-    cumulative_reg[counter] <= running_sum;
     counter <= counter + 1'b1;
     in_rdy <= 1'b0;
   end else if (en && !in_rdy && !in_vld) begin

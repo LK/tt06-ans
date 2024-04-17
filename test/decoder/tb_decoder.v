@@ -25,7 +25,28 @@ module tb ();
   
   reg clk;
   reg rst_n;
-  reg ena;
+  reg ena_loader;
+  reg ena_decoder;
+
+  wire read_type_t read_type;
+  wire [(`CNT_WIDTH + `SYM_WIDTH)-1:0] read_query;
+  wire [(`CNT_WIDTH + `SYM_WIDTH)-1:0] read_result;
+  wire read_rdy;
+
+  ans_loader loader (
+    .in(in_reg),
+    .in_vld(in_vld),
+    .in_rdy(in_rdy),
+
+    .read_type(read_type),
+    .read_query(read_query),
+    .read_result(read_result),
+    .read_rdy(read_rdy),
+
+    .clk(clk),
+    .en(ena_loader),
+    .rst_n(rst_n)
+  );
 
   ans_decoder decoder (
 
@@ -38,8 +59,10 @@ module tb ();
       .in (in_reg),
       .out (out_reg),
 
-      .counts_unpacked (counts_unpacked),
-      .cumulative_unpacked (cumulative_unpacked),
+      .read_type (read_type),
+      .read_query (read_query),
+      .read_result (read_result),
+      .read_rdy (read_rdy),
 
       .in_vld (in_vld),
       .in_rdy (in_rdy),
@@ -47,7 +70,7 @@ module tb ();
       .out_vld (out_vld),
       .out_rdy (out_rdy),
 
-      .ena    (ena),      // enable - goes high when design is selected
+      .ena    (ena_decoder),      // enable - goes high when design is selected
       .clk    (clk),      // clock
       .rst_n  (rst_n)     // not reset
   );
