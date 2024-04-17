@@ -90,9 +90,9 @@ wire encoder_out_vld;
 wire [`SYM_WIDTH-1:0] encoder_out;
 
 ans_encoder encoder (
-  .s_count(0),
-  .s_cumulative(256), // TODO(compute based on symbol)
-  .total_count(256), // TODO(compute based on counts)
+  .s_count(4'b0000),
+  .s_cumulative(8'b000000000), // TODO(compute based on symbol)
+  .total_count(16'b00000000000000000), // TODO(compute based on counts)
   .in_vld(in_vld),
   .in_rdy(encoder_in_rdy),
   .out(encoder_out),
