@@ -64,6 +64,7 @@ wire mode_enc = cmd == 2'b01;
 wire mode_dec = cmd == 2'b10;
 wire mode_load = cmd == 2'b11;
 
+wire loader_in_rdy;
 wire [1:0] read_type;
 wire [(`CNT_WIDTH + `SYM_WIDTH)-1:0] read_query;
 wire [(`CNT_WIDTH + `SYM_WIDTH)-1:0] read_result;

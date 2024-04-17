@@ -32,11 +32,6 @@ reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] max_cumulative;
 reg [`STATE_WIDTH-1:0] decoder_state;
 reg [`CNT_WIDTH-1:0] decoder_state_ptr;
 
-reg start_icdf_lookup;
-wire icdf_done;
-reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] icdf_in;
-wire [`SYM_WIDTH-1:0] icdf_out;
-
 reg [`STATE_WIDTH-1:0] temp_decoder_state;
 reg [1:0] decoder_update_step;
 

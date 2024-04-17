@@ -33,29 +33,29 @@ always @(posedge clk or negedge rst_n) begin
     read_result <= 0;
     query_idx <= 0;
   end else if (read_type != READ_TYPE_NONE && !read_rdy) begin
-  case (read_type)
-    READ_TYPE_PMF: begin
-      read_result <= counts_reg[read_query[`SYM_WIDTH-1:0]];
-      read_rdy <= 1'b1;
-    end
-    READ_TYPE_CMF: begin
-      read_result <= read_result + counts_reg[query_idx];
-      if (query_idx == read_query[`SYM_WIDTH-1:0]) begin
+    case (read_type)
+      READ_TYPE_PMF: begin
+        read_result <= counts_reg[read_query[`SYM_WIDTH-1:0]];
         read_rdy <= 1'b1;
-      end else begin
-        query_idx <= query_idx + 1'b1;
       end
-    end
-    READ_TYPE_ICMF: begin
-      if (read_result > read_query) begin
-        read_result <= query_idx - 1;
-        read_rdy <= 1'b1;
-      end else begin
+      READ_TYPE_CMF: begin
         read_result <= read_result + counts_reg[query_idx];
-        query_idx <= query_idx + 1'b1;
+        if (query_idx == read_query[`SYM_WIDTH-1:0]) begin
+          read_rdy <= 1'b1;
+        end else begin
+          query_idx <= query_idx + 1'b1;
+        end
       end
-    end
-  endcase
+      READ_TYPE_ICMF: begin
+        if (read_result > read_query) begin
+          read_result <= query_idx - 1;
+          read_rdy <= 1'b1;
+        end else begin
+          read_result <= read_result + counts_reg[query_idx];
+          query_idx <= query_idx + 1'b1;
+        end
+      end
+    endcase
   end else if (read_type == READ_TYPE_NONE || read_rdy) begin
     read_rdy <= 0;
     read_result <= 0;
