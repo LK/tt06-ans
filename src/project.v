@@ -101,24 +101,8 @@ ans_encoder encoder (
   .rst_n(rst_n)
 );
 
-wire decoder_in_rdy;
-wire decoder_out_vld;
-wire [`SYM_WIDTH-1:0] decoder_out;
-
-ans_decoder decoder (
-  .in(in),
-  .out(decoder_out),
-  .in_vld(in_vld),
-  .in_rdy(decoder_in_rdy),
-  .out_vld(decoder_out_vld),
-  .out_rdy(out_rdy),
-  .clk(clk),
-  .en(mode_dec),
-  .rst_n(rst_n)
-);
-
-assign in_rdy = mode_load ? loader_in_rdy : mode_enc ? encoder_in_rdy : mode_dec ? decoder_in_rdy : 1'b0;
-assign out_vld = mode_enc ? encoder_out_vld : mode_dec ? decoder_out_vld : 1'b0;
-assign out = mode_enc ? encoder_out : mode_dec ? decoder_out : 1'b0;
+assign in_rdy = mode_load ? loader_in_rdy : mode_enc ? encoder_in_rdy : 1'b0;
+assign out_vld = mode_enc ? encoder_out_vld : 1'b0;
+assign out = mode_enc ? encoder_out : 1'b0;
 
 endmodule
