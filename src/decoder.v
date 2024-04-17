@@ -153,10 +153,10 @@ always @(posedge clk or negedge rst_n) begin
       end
       StateUpdatingState: begin
         if (decoder_update_step == 2'b00) begin
-          temp_decoder_state <= (decoder_state / max_cumulative);
+          // temp_decoder_state <= (decoder_state / max_cumulative);
           decoder_update_step <= decoder_update_step + 1'b1;
         end else if (decoder_update_step == 2'b01) begin
-          temp_decoder_state <= temp_decoder_state * counts[out];
+          // temp_decoder_state <= temp_decoder_state * counts[out];
           decoder_update_step <= decoder_update_step + 1'b1;
         end else if (decoder_update_step == 2'b10) begin
           if (out == 0) begin
