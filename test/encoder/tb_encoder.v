@@ -14,7 +14,7 @@ module tb ();
 
   // Wire up the inputs and outputs:
   reg [3:0] s_count;
-  reg [15:0] s_cumulative;
+  reg [7:0] s_cumulative;
   reg [15:0] total_count;
   reg in_vld;
   reg in_rdy;

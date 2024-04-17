@@ -14,6 +14,8 @@ module ans_encoder (
     input wire rst_n
 );
 
+  reg [`STATE_WIDTH-1:0] state_reg0;
+  reg [`STATE_WIDTH-1:0] state_reg1;
   reg [`STATE_WIDTH-1:0] state_reg;
 
   reg [1:0] state;
@@ -22,7 +24,7 @@ module ans_encoder (
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       // Reset all signals and go to IDLE state.
-      state_reg <= total_count + 1;
+      state_reg = total_count + 1;
       out_vld <= 1'b0;
       in_rdy <= 1'b1;
       out <= 0;
@@ -37,12 +39,14 @@ module ans_encoder (
         PROCESS: begin
           if (state_reg >= ((1 << `SYM_WIDTH) * s_count)) begin
             out <= state_reg[`SYM_WIDTH-1:0];
-            state_reg <= (state_reg >> `SYM_WIDTH);
+            state_reg = (state_reg >> `SYM_WIDTH);
             in_rdy <= 1'b0;
             out_vld <= 1'b1;
             state <= OUTPUT;
           end else begin
-            state_reg <= (s_count * total_count) + s_cumulative; // ((state_reg / s_count) * total_count) + s_cumulative + (state_reg % s_count);
+            state_reg0 = (state_reg / s_count) * total_count;
+            state_reg1 = s_cumulative + (state_reg % s_count); 
+            state_reg = state_reg0 + state_reg1; 
             in_rdy <= 1'b1;
             out_vld <= 1'b0;
             state <= IDLE;
