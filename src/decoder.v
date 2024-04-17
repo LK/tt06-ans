@@ -62,7 +62,7 @@ always @(posedge clk or negedge rst_n) begin
       read_query <= `SYM_COUNT - 1;
     end else if (max_cumulative == 0 && read_rdy) begin
       max_cumulative <= read_result;
-      read_type = READ_TYPE_NONE;
+      read_type <= READ_TYPE_NONE;
     end
 
     case (current_state)
