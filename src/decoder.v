@@ -92,13 +92,13 @@ always @(posedge clk or negedge rst_n) begin
       end
       StateUpdatingState: begin
         if (decoder_update_step == 2'b00) begin
-          // temp_decoder_state <= (decoder_state / max_cumulative);
+          temp_decoder_state <= (decoder_state / max_cumulative);
           decoder_update_step <= decoder_update_step + 1'b1;
 
           read_type <= READ_TYPE_PMF;
           read_query <= out;
         end else if (decoder_update_step == 2'b01 && read_rdy) begin
-          // temp_decoder_state <= temp_decoder_state * read_result;
+          temp_decoder_state <= temp_decoder_state * read_result;
           decoder_update_step <= decoder_update_step + 1'b1;
           read_type <= READ_TYPE_NONE;
         end else if (decoder_update_step == 2'b10 && !read_rdy) begin
@@ -106,9 +106,9 @@ always @(posedge clk or negedge rst_n) begin
           read_query <= out - 1;
         end else if (decoder_update_step == 2'b10 && read_rdy) begin
           if (out == 0) begin
-            // temp_decoder_state <= temp_decoder_state + decoder_state % max_cumulative;
+            temp_decoder_state <= temp_decoder_state + decoder_state % max_cumulative;
           end else begin
-            // temp_decoder_state <= temp_decoder_state + decoder_state % max_cumulative - read_result;
+            temp_decoder_state <= temp_decoder_state + decoder_state % max_cumulative - read_result;
           end
           read_type <= READ_TYPE_NONE;
           decoder_update_step <= decoder_update_step + 1'b1;

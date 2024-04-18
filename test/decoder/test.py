@@ -92,7 +92,6 @@ async def test_decoder_decode(dut):
         symbol = lib.hw.decode(bitstream_model)
         output_model.append(symbol)
 
-        print('about to start processing...')
         await ClockCycles(dut.clk, 20)
         
         assert dut.out_vld.value == 1
@@ -110,7 +109,6 @@ async def test_decoder_decode(dut):
         await ClockCycles(dut.clk, 10)
 
         while dut.decoder.in_rdy.value == 1:
-            print('reading input...')
             dut.in_reg.value = bitstream_hw.pop()
             dut.in_vld.value = 1
 
@@ -121,7 +119,6 @@ async def test_decoder_decode(dut):
 
             await ClockCycles(dut.clk, 20)
 
-        print('comparing state...')
         assert dut.decoder.decoder_state.value == lib.hw.state
 
     assert output_model == output_hw
