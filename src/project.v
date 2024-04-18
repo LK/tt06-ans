@@ -82,13 +82,6 @@ end endgenerate
 
 wire loader_in_rdy;
 
-// always @(posedge clk or negedge rst_n) begin
-//   if (!rst_n) begin
-//     read_query <= 0;
-//     read_type <= 0;
-//   end
-// end
-
 ans_loader loader (
   .in(in),
   .counts_unpacked(counts_unpacked),

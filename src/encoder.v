@@ -43,7 +43,7 @@ module ans_encoder (
       // Output data has been read, go back to reading an input.
       out_vld <= 1'b0;
       in_rdy  <= 1'b1;
-    end else if (!ena && state_output_count < 4) begin
+    end else if (!ena && (state_reg > 0 || state_output_count > 0)) begin
       in_rdy <= 0;
       if (!out_vld && !out_rdy) begin
         out <= state_reg[`SYM_WIDTH-1:0];
@@ -55,6 +55,7 @@ module ans_encoder (
       end
     end else if (!ena) begin
       out_vld <= 0;
+      state_output_count <= 0;
     end
   end
 

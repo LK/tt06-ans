@@ -18,7 +18,7 @@ module ans_loader (
 reg [`CNT_WIDTH-1:0] counts_reg[`SYM_COUNT-1:0];
 reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] cumulative_reg[`SYM_COUNT-1:0];
 reg [`SYM_WIDTH-1:0] counter;
-reg [`SYM_WIDTH-1:0] running_sum;
+reg [(`SYM_WIDTH + `CNT_WIDTH)-1:0] running_sum;
 
 genvar i;
 generate for (i = 0; i < `SYM_COUNT; i = i + 1) begin
@@ -48,10 +48,10 @@ always @(posedge clk or negedge rst_n) begin
   end else if (en && in_rdy && in_vld) begin
     counts_reg[counter] <= in;
     running_sum <= running_sum + in;
-    cumulative_reg[counter] <= running_sum;
-    counter <= counter + 1'b1;
     in_rdy <= 1'b0;
   end else if (en && !in_rdy && !in_vld) begin
+    cumulative_reg[counter] <= running_sum;
+    counter <= counter + 1'b1;
     in_rdy <= 1'b1;
   end
 end
