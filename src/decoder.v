@@ -67,7 +67,7 @@ always @(posedge clk or negedge rst_n) begin
           decoder_state_ptr <= decoder_state_ptr + 1;
           in_rdy <= 1'b0;
         end else if (!in_vld && !in_rdy) begin
-          if (decoder_state_ptr == `STATE_WIDTH / 4) begin
+          if (decoder_state_ptr == (`STATE_WIDTH')(`STATE_WIDTH / 4)) begin
             next_state <= StateWritingValue;
           end else begin
             in_rdy <= 1'b1;
