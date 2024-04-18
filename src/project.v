@@ -60,7 +60,7 @@ module ans (
   input wire rst_n
 );
 
-wire mode_enc = cmd == 2'b01;
+// wire mode_enc = cmd == 2'b01;
 wire mode_dec = cmd == 2'b10;
 wire mode_load = cmd == 2'b11;
 
@@ -85,23 +85,23 @@ ans_loader loader (
   .rst_n(rst_n)
 );
 
-wire encoder_in_rdy;
-wire encoder_out_vld;
-wire [`SYM_WIDTH-1:0] encoder_out;
+// wire encoder_in_rdy;
+// wire encoder_out_vld;
+// wire [`SYM_WIDTH-1:0] encoder_out;
 
-ans_encoder encoder (
-  .s_count(4'b0000),
-  .s_cumulative(8'b000000000), // TODO(compute based on symbol)
-  .total_count(16'b00000000000000000), // TODO(compute based on counts)
-  .in_vld(in_vld),
-  .in_rdy(encoder_in_rdy),
-  .out(encoder_out),
-  .out_vld(encoder_out_vld),
-  .out_rdy(out_rdy),
-  .clk(clk),
-  .ena(mode_enc),
-  .rst_n(rst_n)
-);
+// ans_encoder encoder (
+//   .s_count(4'b0000),
+//   .s_cumulative(8'b000000000), // TODO(compute based on symbol)
+//   .total_count(16'b00000000000000000), // TODO(compute based on counts)
+//   .in_vld(in_vld),
+//   .in_rdy(encoder_in_rdy),
+//   .out(encoder_out),
+//   .out_vld(encoder_out_vld),
+//   .out_rdy(out_rdy),
+//   .clk(clk),
+//   .ena(mode_enc),
+//   .rst_n(rst_n)
+// );
 
 wire decoder_in_rdy;
 wire decoder_out_vld;
@@ -125,8 +125,12 @@ ans_decoder decoder (
   .rst_n(rst_n)
 );
 
-assign in_rdy = mode_load ? loader_in_rdy : mode_enc ? encoder_in_rdy : mode_dec ? decoder_in_rdy : 1'b0;
-assign out_vld = mode_enc ? encoder_out_vld : mode_dec ? decoder_out_vld : 1'b0;
-assign out = mode_enc ? encoder_out : mode_dec ? decoder_out : 1'b0;
+// assign in_rdy = mode_load ? loader_in_rdy : mode_enc ? encoder_in_rdy : mode_dec ? decoder_in_rdy : 1'b0;
+// assign out_vld = mode_enc ? encoder_out_vld : mode_dec ? decoder_out_vld : 1'b0;
+// assign out = mode_enc ? encoder_out : mode_dec ? decoder_out : 1'b0;
+
+assign in_rdy = mode_load ? loader_in_rdy : mode_dec ? decoder_in_rdy : 1'b0;
+assign out_vld = mode_dec ? decoder_out_vld : 1'b0;
+assign out = mode_dec ? decoder_out : 1'b0;
 
 endmodule
