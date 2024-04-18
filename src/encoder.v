@@ -20,12 +20,13 @@ module ans_encoder (
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       // Reset all signals.
-      state_reg <= total_count + 1;
+      state_reg <= 0;
       out_vld <= 1'b0;
       in_rdy <= 1'b1;
       out <= 0;
+    end else if (ena && state_reg == 0) begin
+      state_reg <= total_count + 1;
     end else if (ena && in_vld && in_rdy) begin
-
       if (state_reg >= ((1 << `SYM_WIDTH) * s_count)) begin
         out <= state_reg[`SYM_WIDTH-1:0];
         state_reg <= (state_reg >> `SYM_WIDTH);
@@ -36,7 +37,6 @@ module ans_encoder (
         in_rdy  <= 1'b1;
         out_vld <= 1'b0;
       end
-
     end else if (ena && out_vld && out_rdy) begin
       // Output data has been read, go back to reading an input.
       out_vld <= 1'b0;

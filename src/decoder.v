@@ -108,15 +108,6 @@ ans_icdf_lookup icdf_lookup (
 
 always @(posedge clk or negedge rst_n) begin
   if (!rst_n) begin
-    current_state <= StateReadingState;
-    next_state <= StateReadingState;
-  end else begin
-    current_state <= next_state;
-  end
-end
-
-always @(posedge clk or negedge rst_n) begin
-  if (!rst_n) begin
     // Reset all signals.
     out_vld <= 1'b0;
     in_rdy <= 1'b1;
@@ -126,7 +117,10 @@ always @(posedge clk or negedge rst_n) begin
     decoder_update_step <= 0;
     decoder_state_ptr <= 0;
     icdf_in <= 0;
+    current_state <= StateReadingState;
+    next_state <= StateReadingState;
   end else if (ena) begin
+    current_state <= next_state;
     case (current_state)
       StateReadingState: begin
         if (in_vld && in_rdy) begin
@@ -153,7 +147,7 @@ always @(posedge clk or negedge rst_n) begin
           end
         end else if (out_vld && out_rdy) begin
           next_state <= StateUpdatingState;
-          decoder_update_step <= 1'b00;
+          decoder_update_step <= 2'b00;
           out_vld <= 1'b0;
         end
       end
@@ -165,11 +159,7 @@ always @(posedge clk or negedge rst_n) begin
           temp_decoder_state <= temp_decoder_state * counts[out];
           decoder_update_step <= decoder_update_step + 1'b1;
         end else if (decoder_update_step == 2'b10) begin
-          if (out == 0) begin
-            temp_decoder_state <= temp_decoder_state + decoder_state % max_cumulative;
-          end else begin
-            temp_decoder_state <= temp_decoder_state + decoder_state % max_cumulative - cumulative[out - 1];
-          end
+          temp_decoder_state <= temp_decoder_state + decoder_state % max_cumulative - (out == 0 ? 0 : cumulative[out - 1]);
           decoder_update_step <= decoder_update_step + 1'b1;
         end else begin
           decoder_state <= temp_decoder_state;

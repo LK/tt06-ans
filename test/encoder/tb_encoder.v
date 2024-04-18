@@ -12,10 +12,11 @@ module tb ();
     #1;
   end
 
+  reg [`CNT_WIDTH-1:0] counts[`SYM_COUNT-1:0];
+  reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] cumulative[`SYM_COUNT-1:0];
+
   // Wire up the inputs and outputs:
-  reg [3:0] s_count;
-  reg [15:0] s_cumulative;
-  reg [15:0] total_count;
+  reg [3:0] in_reg;
   reg in_vld;
   reg in_rdy;
 
@@ -36,9 +37,9 @@ module tb ();
 `endif
 
       .out (out_reg),  
-      .s_count (s_count),
-      .s_cumulative (s_cumulative),
-      .total_count (total_count),
+      .s_count(counts[in_reg]),
+      .s_cumulative(in_reg == 0 ? 0 : cumulative[in_reg - 1]),
+      .total_count(cumulative[`SYM_COUNT-1]),
 
       .in_vld (in_vld),
       .in_rdy (in_rdy),
