@@ -5,6 +5,17 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
 
+async def load_state(dut, state):
+  dut.uio_in.value = 0b0011 # mode = load, in_vld = 0
+  await ClockCycles(dut.clk, 1)
+  for d in state:
+    dut.ui_in.value = d
+    dut.uio_in.value = 0b0111 # mode = load, in_vld = 1
+    await ClockCycles(dut.clk, 2)
+    assert dut.uio_out[4] == 0 # in_rdy = 0
+    dut.uio_in.value = 0b0011 # mode = load, in_vld = 0
+    await ClockCycles(dut.clk, 2)
+
 @cocotb.test()
 async def test_load(dut):
   dut._log.info("Start")
@@ -26,18 +37,7 @@ async def test_load(dut):
 
   state_in = [x for x in range(16)]
 
-  dut.uio_in.value = 0b0011 # mode = load, in_vld = 0
-
-  await ClockCycles(dut.clk, 1)
-
-  for d in state_in:
-    assert dut.uio_out[4] == 1 # in_rdy = 1
-    dut.ui_in.value = d
-    dut.uio_in.value = 0b0111 # mode = load, in_vld = 1
-    await ClockCycles(dut.clk, 2)
-    assert dut.uio_out[4] == 0 # in_rdy = 0
-    dut.uio_in.value = 0b0011 # mode = load, in_vld = 0
-    await ClockCycles(dut.clk, 2)
+  await load_state(dut, state_in)
 
   # TODO(lenny): make this work for gate-level sims
   try:

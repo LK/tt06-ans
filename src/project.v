@@ -8,6 +8,7 @@
 `define STATE_WIDTH 16
 `define SYM_COUNT (2**`SYM_WIDTH)
 `define CNT_WIDTH 4
+`define STATE_WIDTH 16
 
 module tt_um_lk_ans_top (
     input  wire [7:0] ui_in,    // Dedicated inputs
@@ -66,9 +67,17 @@ wire mode_load = cmd == 2'b11;
 wire [`CNT_WIDTH-1:0] counts[`SYM_COUNT-1:0];
 wire [(`CNT_WIDTH * `SYM_COUNT)-1:0] counts_unpacked;
 
+wire [(`CNT_WIDTH + `SYM_WIDTH)-1:0] cumulative[`SYM_COUNT-1:0];
+wire [((`CNT_WIDTH + `SYM_WIDTH) * `SYM_COUNT)-1:0] cumulative_unpacked;
+
 genvar i;
 generate for (i = 0; i < `SYM_COUNT; i = i + 1) begin
-  assign counts_unpacked[i*`CNT_WIDTH +: `CNT_WIDTH] = counts[i];
+  assign counts[i] = counts_unpacked[i*`CNT_WIDTH +: `CNT_WIDTH];
+end endgenerate
+
+genvar j;
+generate for (j = 0; j < `SYM_COUNT; j = j + 1) begin
+  assign cumulative[j] = cumulative_unpacked[j*(`CNT_WIDTH + `SYM_WIDTH) +: (`CNT_WIDTH + `SYM_WIDTH)];
 end endgenerate
 
 wire loader_in_rdy;
@@ -76,6 +85,7 @@ wire loader_in_rdy;
 ans_loader loader (
   .in(in),
   .counts_unpacked(counts_unpacked),
+  .cumulative_unpacked(cumulative_unpacked),
   .in_vld(in_vld),
   .in_rdy(loader_in_rdy),
   .clk(clk),
@@ -89,8 +99,8 @@ wire [`SYM_WIDTH-1:0] encoder_out;
 
 ans_encoder encoder (
   .s_count(counts[in]),
-  .s_cumulative(256), // TODO(compute based on symbol)
-  .total_count(256), // TODO(compute based on counts)
+  .s_cumulative(in == 0 ? 0 : cumulative[in - 1]),
+  .total_count(cumulative[`SYM_COUNT-1]),
   .in_vld(in_vld),
   .in_rdy(encoder_in_rdy),
   .out(encoder_out),
@@ -108,17 +118,19 @@ wire [`SYM_WIDTH-1:0] decoder_out;
 ans_decoder decoder (
   .in(in),
   .out(decoder_out),
+  .counts_unpacked(counts_unpacked),
+  .cumulative_unpacked(cumulative_unpacked),
   .in_vld(in_vld),
   .in_rdy(decoder_in_rdy),
   .out_vld(decoder_out_vld),
   .out_rdy(out_rdy),
   .clk(clk),
-  .en(mode_dec),
+  .ena(mode_dec),
   .rst_n(rst_n)
 );
 
-assign in_rdy = mode_load ? loader_in_rdy : mode_enc ? encoder_in_rdy : mode_dec ? decoder_in_rdy : 1'b0;
-assign out_vld = mode_enc ? encoder_out_vld : mode_dec ? decoder_out_vld : 1'b0;
-assign out = mode_enc ? encoder_out : mode_dec ? decoder_out : 1'b0;
+assign in_rdy = mode_load ? loader_in_rdy : mode_enc ? encoder_in_rdy : mode_dec ? decoder_in_rdy : (loader_in_rdy | encoder_in_rdy | decoder_in_rdy);
+assign out_vld = mode_enc ? encoder_out_vld : mode_dec ? decoder_out_vld : (encoder_out_vld | decoder_out_vld);
+assign out = mode_enc ? encoder_out : mode_dec ? decoder_out : (encoder_out | decoder_out);
 
 endmodule

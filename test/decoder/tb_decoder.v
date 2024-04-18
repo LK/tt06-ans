@@ -12,23 +12,22 @@ module tb ();
     #1;
   end
 
-  reg [`CNT_WIDTH-1:0] counts[`SYM_COUNT-1:0];
-  reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] cumulative[`SYM_COUNT-1:0];
-
   // Wire up the inputs and outputs:
   reg [3:0] in_reg;
+  reg [63:0] counts_unpacked;
+  reg [127:0] cumulative_unpacked;
   reg in_vld;
-  reg in_rdy;
+  wire in_rdy;
 
-  reg [3:0] out_reg;
-  reg out_vld;
+  wire [3:0] out_reg;
+  wire out_vld;
   reg out_rdy;
   
   reg clk;
   reg rst_n;
   reg ena;
 
-  ans_encoder encoder (
+  ans_decoder decoder (
 
       // Include power ports for the Gate Level test:
 `ifdef GL_TEST
@@ -36,10 +35,11 @@ module tb ();
       .VGND(1'b0),
 `endif
 
-      .out (out_reg),  
-      .s_count(counts[in_reg]),
-      .s_cumulative(in_reg == 0 ? 0 : cumulative[in_reg - 1]),
-      .total_count(cumulative[`SYM_COUNT-1]),
+      .in (in_reg),
+      .out (out_reg),
+
+      .counts_unpacked (counts_unpacked),
+      .cumulative_unpacked (cumulative_unpacked),
 
       .in_vld (in_vld),
       .in_rdy (in_rdy),

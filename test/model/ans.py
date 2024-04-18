@@ -108,6 +108,7 @@ class AnsHardware:
 
         slot = state % self.total_count
         symbol = cumul_inverse(slot)
+
         self.state = (
             (state // self.total_count) * self.counts[symbol]
             + slot

@@ -30,6 +30,7 @@ async def test_encoder_reset(dut):
     # Setup the data model
     data_in = [x for x in range(16)]
     model = setup_model(data_in)
+    counts = [data_in.count(x) for x in range(16)]
 
     # Reset model
     model.reset()
@@ -38,15 +39,23 @@ async def test_encoder_reset(dut):
     dut._log.info("Reset")
     dut.ena.value = 1
     dut.rst_n.value = 0
-    dut.total_count.value = model.total_count
-    dut.rst_n.value = 0
+    dut.in_reg.value = 0
+    dut.in_vld.value = 0
+    dut.out_rdy.value = 0
+    for i in range(16):
+        dut.counts[i].value = counts[i]
+        dut.cumulative[i].value = sum(counts[:i + 1])
     await ClockCycles(dut.clk, 10)
     dut.rst_n.value = 1
 
-    assert dut.encoder.state_reg.value == model.state
+    assert dut.encoder.state_reg.value == 0 
     assert dut.encoder.in_rdy == 1
     assert dut.encoder.out_vld == 0
     assert dut.encoder.out == 0
+
+    await ClockCycles(dut.clk, 2)
+
+    assert dut.encoder.state_reg.value == model.state
 
 
 @cocotb.test()
@@ -58,17 +67,21 @@ async def test_encoder_state(dut):
     # Setup the data model
     data_in = [randint(0, 15) for x in range(16)]
     model = setup_model(data_in)
+    counts = [data_in.count(x) for x in range(16)]
 
     # Reset model
     model.reset()
     await test_encoder_reset(dut)
 
+    # Load counts/cumulative counts
+    for i in range(16):
+        dut.counts[i].value = counts[i]
+        dut.cumulative[i].value = sum(counts[:i + 1])
+
     for symbol in data_in:
         output = model.encode(symbol)
 
-        dut.s_count.value = model.counts[symbol]
-        dut.s_cumulative.value = model.cumulative[symbol]
-        dut.total_count.value = model.total_count
+        dut.in_reg.value = symbol
 
         dut.in_vld.value = 1
         await ClockCycles(dut.clk, 1)
@@ -84,3 +97,18 @@ async def test_encoder_state(dut):
             assert output == None
 
         assert dut.encoder.state_reg.value == model.state
+    
+    out_state = 0
+    dut.ena.value = 0
+    dut.out_rdy.value = 0
+
+    for i in range(4):
+        await ClockCycles(dut.clk, 2)
+        assert dut.out_vld == 1
+        out_state = dut.out_reg.value << (4 * i) | out_state
+        dut.out_rdy.value = 1
+        await ClockCycles(dut.clk, 2)
+        assert dut.out_vld == 0
+        dut.out_rdy.value = 0
+    
+    assert out_state == model.state
