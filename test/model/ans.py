@@ -120,18 +120,12 @@ class AnsHardware:
         mask = (1 << self.shift) - 1
         step = 1 << (self.shift)
 
-        print('before state:', self.state)
         while self.state >= (step * self.counts[symbol]):
-            print('shifting out state...')
             output = self.state & mask
             self.state = self.state >> self.shift
-            print('output', output)
-            print('new state', self.state)
-            print()
             return output
 
         self.state = self.c_rANS(self.state, symbol)
-        print('encoded new state:', self.state)
 
         return None
 

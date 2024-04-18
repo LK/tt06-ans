@@ -136,8 +136,8 @@ ans_decoder decoder (
   .rst_n(rst_n)
 );
 
-assign in_rdy = mode_load ? loader_in_rdy : mode_enc ? encoder_in_rdy : mode_dec ? decoder_in_rdy : 1'b0;
-assign out_vld = mode_enc ? encoder_out_vld : mode_dec ? decoder_out_vld : 1'b0;
-assign out = mode_enc ? encoder_out : mode_dec ? decoder_out : 1'b0;
+assign in_rdy = mode_load ? loader_in_rdy : mode_enc ? encoder_in_rdy : mode_dec ? decoder_in_rdy : (loader_in_rdy | encoder_in_rdy | decoder_in_rdy);
+assign out_vld = mode_enc ? encoder_out_vld : mode_dec ? decoder_out_vld : (encoder_out_vld | decoder_out_vld);
+assign out = mode_enc ? encoder_out : mode_dec ? decoder_out : (encoder_out | decoder_out);
 
 endmodule

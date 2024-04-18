@@ -1,8 +1,8 @@
 module ans_encoder (
 
     input wire [`CNT_WIDTH-1:0] s_count,
-    input wire [`SYM_WIDTH + `CNT_WIDTH - 1:0] s_cumulative,
-    input wire [`STATE_WIDTH-1:0] total_count,
+    input wire [`SYM_WIDTH+`CNT_WIDTH-1:0] s_cumulative,
+    input wire [`SYM_WIDTH+`CNT_WIDTH-1:0] total_count,
     input wire in_vld,
     output reg in_rdy,
 
@@ -16,6 +16,7 @@ module ans_encoder (
 );
 
   reg [`STATE_WIDTH-1:0] state_reg;
+  reg [2:0] state_output_count;
 
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -23,6 +24,7 @@ module ans_encoder (
       state_reg <= 0;
       out_vld <= 1'b0;
       in_rdy <= 1'b1;
+      state_output_count <= 0;
       out <= 0;
     end else if (ena && state_reg == 0) begin
       state_reg <= total_count + 1;
@@ -41,6 +43,18 @@ module ans_encoder (
       // Output data has been read, go back to reading an input.
       out_vld <= 1'b0;
       in_rdy  <= 1'b1;
+    end else if (!ena && state_output_count < 4) begin
+      in_rdy <= 0;
+      if (!out_vld && !out_rdy) begin
+        out <= state_reg[`SYM_WIDTH-1:0];
+        state_reg <= (state_reg >> `SYM_WIDTH);
+        out_vld <= 1'b1;
+        state_output_count <= state_output_count + 1;
+      end else if (out_vld && out_rdy) begin
+        out_vld <= 1'b0;
+      end
+    end else if (!ena) begin
+      out_vld <= 0;
     end
   end
 
