@@ -8,7 +8,7 @@ This can be used as part of a larger system, to losslessly compress neural netwo
 
 # How it works
 
-# Loader 
+## Loader 
 
 The `loader.v` module is designed to interface with external memory or data sources to load the necessary symbol counts, cumulative symbol counts, and total counts required by the ANS encoder and decoder modules. It acts as a bridge between the raw data storage and the encoding/decoding processes, ensuring that data is correctly formatted and available when needed.
 
