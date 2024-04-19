@@ -69,9 +69,9 @@ transition to idle mode, and then to the target mode.
 
 #### Configure mode (`0b11`)
 
-Configuration mode allows you to program the symbol frequencies into memory.
-Before doing any encoding or decoding, you must enter configure mode and load
-the full symbol table into memory.
+Configure mode allows you to program the symbol frequencies into memory. Before
+doing any encoding or decoding, you must enter configure mode and load the full
+symbol table into memory.
 
 When you enter configure mode, the chip will request data on the input interface
 to fill the symbol table. Because we have a 4-bit alphabet, you must write
