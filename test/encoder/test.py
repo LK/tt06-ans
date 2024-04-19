@@ -79,22 +79,26 @@ async def test_encoder_state(dut):
         dut.cumulative[i].value = sum(counts[:i + 1])
 
     for symbol in data_in:
-        output = model.encode(symbol)
+        assert dut.in_rdy.value == 1
 
         dut.in_reg.value = symbol
 
         dut.in_vld.value = 1
-        await ClockCycles(dut.clk, 10)
+        await ClockCycles(dut.clk, 1)
         dut.in_vld.value = 0
-        await ClockCycles(dut.clk, 10)
+        await ClockCycles(dut.clk, 1)
 
-        if dut.out_vld.value:
+        while dut.out_vld.value:
+            output = model.encode(symbol)
+            assert dut.out_reg.value == output
             dut.out_rdy.value = 1
             await ClockCycles(dut.clk, 2)
             assert dut.out_vld.value == 0
-            assert dut.out_reg.value == output
-        else:
-            assert output == None
+            dut.out_rdy.value = 0
+            await ClockCycles(dut.clk, 2)
+        
+        output = model.encode(symbol)
+        assert output == None
 
         assert dut.encoder.state_reg.value == model.state
     
