@@ -65,7 +65,7 @@ The ANS compressor has 4 modes, which are controlled by the `mode` pins
 
 This is the default mode of the chip. The chip must be in idle mode when you
 bring it out of reset. When transitioning between modes, you must first
-transition to the idle mode, and then to the target mode.
+transition to idle mode, and then to the target mode.
 
 #### Configure mode (`0b11`)
 
