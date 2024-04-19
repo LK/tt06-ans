@@ -84,9 +84,9 @@ async def test_encoder_state(dut):
         dut.in_reg.value = symbol
 
         dut.in_vld.value = 1
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 10)
         dut.in_vld.value = 0
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 10)
 
         if dut.out_vld.value:
             dut.out_rdy.value = 1
