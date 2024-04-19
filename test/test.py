@@ -89,6 +89,8 @@ async def test_e2e(dut):
 
   await load_counts(dut, counts)
 
+  hw_out = []
+
   # idle
   dut.ans_cmd.value = 0b00
   await ClockCycles(dut.clk, 10)
@@ -98,8 +100,6 @@ async def test_e2e(dut):
   await ClockCycles(dut.clk, 10)
 
   for symbol in data_in:
-    output = model.encode(symbol)
-
     print(symbol)
     assert dut.ans_in_rdy.value == 1
 
@@ -107,34 +107,93 @@ async def test_e2e(dut):
 
     dut.ans_in_vld.value = 1
     await ClockCycles(dut.clk, 10)
-    dut.ans_in_vld.value = 0
-    await ClockCycles(dut.clk, 10)
 
-    assert dut.ans_in_rdy.value == 0
-
-    if dut.ans_out_vld.value:
+    while dut.ans_out_vld.value:
+      output = model.encode(symbol)
+      assert dut.ans_out.value == output
+      hw_out.append(dut.ans_out.value)
       dut.ans_out_rdy.value = 1
       await ClockCycles(dut.clk, 2)
       assert dut.ans_out_vld.value == 0
-      assert dut.ans_out.value == output
-    else:
-      assert output == None
+      dut.ans_out_rdy.value = 0
+      await ClockCycles(dut.clk, 2)
+    
+    dut.ans_in_vld.value = 0
+    await ClockCycles(dut.clk, 10)
+    
+    output = model.encode(symbol)
+    assert output == None
 
     assert dut.user_project.ans_block.encoder.state_reg.value == model.state
-
-    await ClockCycles(dut.clk, 10)
-
+  
+  # capture final state
   out_state = 0
   dut.ans_cmd.value = 0
   dut.ans_out_rdy.value = 0
 
   for i in range(4):
-    await ClockCycles(dut.clk, 2)
-    assert dut.out_vld == 1
-    out_state = dut.out_reg.value << (4 * i) | out_state
-    dut.out_rdy.value = 1
-    await ClockCycles(dut.clk, 2)
-    assert dut.out_vld == 0
-    dut.out_rdy.value = 0
-    
+      await ClockCycles(dut.clk, 2)
+      assert dut.ans_out_vld == 1
+      out_state = dut.ans_out.value << (4 * i) | out_state
+      hw_out.append(dut.ans_out.value)
+      dut.ans_out_rdy.value = 1
+      await ClockCycles(dut.clk, 2)
+      assert dut.ans_out_vld == 0
+      dut.ans_out_rdy.value = 0
+  
   assert out_state == model.state
+
+  # decode
+  dut.ans_cmd.value = 0b10
+  await ClockCycles(dut.clk, 10)
+
+  for sym in reversed(hw_out[-4:]):
+     assert dut.ans_in_rdy.value == 1
+     dut.ans_in.value = sym
+     dut.ans_in_vld.value = 1
+     await ClockCycles(dut.clk, 2)
+     assert dut.ans_in_rdy.value == 0
+     dut.ans_in_vld.value = 0
+     await ClockCycles(dut.clk, 2)
+    
+  # assert dut.user_project.ans_block.decoder.decoder_state.value == model.state
+
+  model_bitstream = list(hw_out[:-4])
+  hw_bitstream = list(hw_out[:-4])
+  hw_decoded = []
+  while len(hw_decoded) < len(data_in):
+    model_symbol = model.decode(model_bitstream)
+
+    await ClockCycles(dut.clk, 25)
+    
+    assert dut.ans_out_vld.value == 1
+    assert dut.ans_out.value == model_symbol
+
+    hw_decoded.append(dut.ans_out.value)
+
+    dut.ans_out_rdy.value = 1
+
+    await ClockCycles(dut.clk, 2)
+
+    assert dut.ans_out_vld.value == 0
+    dut.ans_out_rdy.value = 0
+
+    await ClockCycles(dut.clk, 10)
+
+    while dut.ans_in_rdy.value == 1:
+        dut.ans_in.value = hw_bitstream.pop()
+        dut.ans_in_vld.value = 1
+
+        await ClockCycles(dut.clk, 2)
+
+        assert dut.ans_in_rdy.value == 0
+        dut.ans_in_vld.value = 0
+
+        await ClockCycles(dut.clk, 2)
+
+    # assert dut.user_project.ans_block.decoder.decoder_state.value == model.state
+  
+  assert list(hw_decoded) == list(reversed(data_in))
+
+
+
