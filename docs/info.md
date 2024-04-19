@@ -119,7 +119,7 @@ the first byte fed to the encoder will be the last byte emitted by the decoder.
 
 0. Compute the frequency table of your data. We use a 4-bit alphabet, so you'll
 need to divide your data into nibbles before doing this computation, and you 
-must scale your counts so that the maximum count no more than 15.
+must scale your counts so that the maximum count is no more than 15.
 1. Set `mode` to `00`, and come out of reset.
 2. Set `mode` to `11`, configure mode.
 3. Use the input interface to load 16 symbol counts into memory.
