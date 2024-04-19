@@ -1,22 +1,29 @@
 # SPDX-FileCopyrightText: © 2024 Tiny Tapeout
 # SPDX-License-Identifier: MIT
 
+import sys
+
+# sys.path.append(".")
+
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
+import model.ans as ans
+from random import randint
 
-async def load_state(dut, state):
-  dut.uio_in.value = 0b0011 # mode = load, in_vld = 0
+async def load_counts(dut, state):
+  dut.ans_cmd.value = 0b11
+  dut.ans_in_vld.value = 0
   await ClockCycles(dut.clk, 1)
   for d in state:
-    dut.ui_in.value = d
-    dut.uio_in.value = 0b0111 # mode = load, in_vld = 1
+    dut.ans_in.value = d
+    dut.ans_in_vld.value = 1
     await ClockCycles(dut.clk, 2)
-    assert dut.uio_out[4] == 0 # in_rdy = 0
-    dut.uio_in.value = 0b0011 # mode = load, in_vld = 0
+    assert dut.ans_in_rdy == 0
+    dut.ans_in_vld.value = 0
     await ClockCycles(dut.clk, 2)
 
-@cocotb.test()
+# @cocotb.test()
 async def test_load(dut):
   dut._log.info("Start")
   
@@ -26,8 +33,10 @@ async def test_load(dut):
   # Reset
   dut._log.info("Reset")
   dut.ena.value = 1
-  dut.ui_in.value = 0
-  dut.uio_in.value = 0
+  dut.ans_in.value = 0
+  dut.ans_cmd.value = 0
+  dut.ans_in_vld.value = 0
+  dut.ans_out_rdy.value = 0
   dut.rst_n.value = 0
   await ClockCycles(dut.clk, 10)
   dut.rst_n.value = 1
@@ -35,13 +44,97 @@ async def test_load(dut):
   # Set the input values, wait one clock cycle, and check the output
   dut._log.info("Test")
 
-  state_in = [x for x in range(16)]
+  lib = ans.AnsLibrary(alphabet_size=16, shift=4)
+  data_in = bytes([randint(0, 15) for _ in range(16)])
+  counts = [data_in.count(x) for x in range(16)]
+  lib.set_counts(counts)
 
-  await load_state(dut, state_in)
+  await load_counts(dut, counts)
 
   # TODO(lenny): make this work for gate-level sims
   try:
     print('state', dut.user_project.ans_block.loader.counts_reg.value)
-    assert [x.value for x in reversed(dut.user_project.ans_block.loader.counts_reg.value)] == state_in
+    assert [x.value for x in reversed(dut.user_project.ans_block.loader.counts_reg.value)] == counts
   except AttributeError:
     pass
+
+@cocotb.test()
+async def test_e2e(dut):
+  dut._log.info("Start")
+  
+  clock = Clock(dut.clk, 10, units="us")
+  cocotb.start_soon(clock.start())
+
+  # Reset
+  dut._log.info("Reset")
+  dut.ena.value = 1
+  dut.ans_in.value = 0
+  dut.ans_cmd.value = 0
+  dut.ans_in_vld.value = 0
+  dut.ans_out_rdy.value = 0
+  dut.rst_n.value = 0
+  await ClockCycles(dut.clk, 10)
+  dut.rst_n.value = 1
+
+  # Set the input values, wait one clock cycle, and check the output
+  dut._log.info("Test")
+
+  model = ans.AnsHardware(alphabet_size=16, shift=4)
+  data_in = bytes([randint(0, 15) for _ in range(16)])
+  counts = [data_in.count(x) for x in range(16)]
+  for i in range(16):
+    model.load_count(i, counts[i])
+  
+  model.reset()
+
+  await load_counts(dut, counts)
+
+  # idle
+  dut.ans_cmd.value = 0b00
+  await ClockCycles(dut.clk, 10)
+
+  # encode
+  dut.ans_cmd.value = 0b01
+  await ClockCycles(dut.clk, 10)
+
+  for symbol in data_in:
+    output = model.encode(symbol)
+
+    print(symbol)
+    assert dut.ans_in_rdy.value == 1
+
+    dut.ans_in.value = symbol
+
+    dut.ans_in_vld.value = 1
+    await ClockCycles(dut.clk, 10)
+    dut.ans_in_vld.value = 0
+    await ClockCycles(dut.clk, 10)
+
+    assert dut.ans_in_rdy.value == 0
+
+    if dut.ans_out_vld.value:
+      dut.ans_out_rdy.value = 1
+      await ClockCycles(dut.clk, 2)
+      assert dut.ans_out_vld.value == 0
+      assert dut.ans_out.value == output
+    else:
+      assert output == None
+
+    assert dut.user_project.ans_block.encoder.state_reg.value == model.state
+
+    await ClockCycles(dut.clk, 10)
+
+  out_state = 0
+  dut.ans_cmd.value = 0
+  dut.ans_out_rdy.value = 0
+
+  for i in range(4):
+    await ClockCycles(dut.clk, 2)
+    assert dut.out_vld == 1
+    out_state = dut.out_reg.value << (4 * i) | out_state
+    dut.out_rdy.value = 1
+    await ClockCycles(dut.clk, 2)
+    assert dut.out_vld == 0
+    dut.out_rdy.value = 0
+    
+  assert out_state == model.state
