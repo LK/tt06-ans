@@ -59,7 +59,7 @@ The protocol for reading data from the chip is:
 
 ### Operating Modes
 The ANS compressor has 4 modes, which are controlled by the `mode` pins
-(uio[1:0]). The modes are defined below.
+(`uio[1:0]`). The modes are defined below.
 
 #### Idle mode (`0b00`)
 
