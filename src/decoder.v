@@ -61,10 +61,10 @@ module ans_decoder (
 );
 
 typedef enum reg [1:0] {
-    StateReadingState = 2'b00,
-    StateWritingValue = 2'b01,
-    StateUpdatingState = 2'b10,
-    StateReadingValue = 2'b11
+    READ_STATE = 2'b00,
+    WRITE_VALUE = 2'b01,
+    UPDATE_STATE = 2'b10,
+    READ_VALUE = 2'b11
 } state_t;
 
 state_t current_state, next_state;
@@ -93,9 +93,6 @@ wire icdf_done;
 reg [(`CNT_WIDTH + `SYM_WIDTH)-1:0] icdf_in;
 wire [`SYM_WIDTH-1:0] icdf_out;
 
-reg [`STATE_WIDTH-1:0] temp_decoder_state;
-reg [1:0] decoder_update_step;
-
 ans_icdf_lookup icdf_lookup (
   .in(icdf_in),
   .cumulative_unpacked(cumulative_unpacked),
@@ -113,29 +110,29 @@ always @(posedge clk or negedge rst_n) begin
     in_rdy <= 1'b1;
     out <= 0;
     start_icdf_lookup <= 0;
-    temp_decoder_state <= 0;
-    decoder_update_step <= 0;
     decoder_state_ptr <= 0;
     icdf_in <= 0;
-    current_state <= StateReadingState;
-    next_state <= StateReadingState;
+    current_state <= READ_STATE;
+    next_state <= READ_STATE;
   end else if (ena) begin
     current_state <= next_state;
     case (current_state)
-      StateReadingState: begin
+      READ_STATE: begin
+        // Read the initial state.
         if (in_vld && in_rdy) begin
           decoder_state[decoder_state_ptr * 4 +: 4] <= in;
           decoder_state_ptr <= decoder_state_ptr + 1;
           in_rdy <= 1'b0;
         end else if (!in_vld && !in_rdy) begin
           if (decoder_state_ptr == `STATE_WIDTH / 4) begin
-            next_state <= StateWritingValue;
+            next_state <= WRITE_VALUE;
           end else begin
             in_rdy <= 1'b1;
           end
         end
       end
-      StateWritingValue: begin
+      WRITE_VALUE: begin
+        // Emit a symbol.
         if (!out_vld && !out_rdy) begin
           if (!start_icdf_lookup) begin
             icdf_in <= decoder_state % max_cumulative;
@@ -146,35 +143,25 @@ always @(posedge clk or negedge rst_n) begin
             start_icdf_lookup <= 1'b0;
           end
         end else if (out_vld && out_rdy) begin
-          next_state <= StateUpdatingState;
-          decoder_update_step <= 2'b00;
+          next_state <= UPDATE_STATE;
+          decoder_state <= (decoder_state / max_cumulative) * counts[out] + decoder_state % max_cumulative - (out == 0 ? 0 : cumulative[out - 1]);
           out_vld <= 1'b0;
         end
       end
-      StateUpdatingState: begin
-        if (decoder_update_step == 2'b00) begin
-          temp_decoder_state <= (decoder_state / max_cumulative);
-          decoder_update_step <= decoder_update_step + 1'b1;
-        end else if (decoder_update_step == 2'b01) begin
-          temp_decoder_state <= temp_decoder_state * counts[out];
-          decoder_update_step <= decoder_update_step + 1'b1;
-        end else if (decoder_update_step == 2'b10) begin
-          temp_decoder_state <= temp_decoder_state + decoder_state % max_cumulative - (out == 0 ? 0 : cumulative[out - 1]);
-          decoder_update_step <= decoder_update_step + 1'b1;
+      UPDATE_STATE: begin
+        // Determine the next state to jump to.
+        if (decoder_state < max_cumulative) begin
+          next_state <= READ_VALUE;
+          in_rdy <= 1'b1;
         end else begin
-          decoder_state <= temp_decoder_state;
-
-          if (temp_decoder_state < max_cumulative) begin
-            next_state <= StateReadingValue;
-            in_rdy <= 1'b1;
-          end else begin
-            next_state <= StateWritingValue;
-          end
+          next_state <= WRITE_VALUE;
         end
       end
-      StateReadingValue: begin
+      READ_VALUE: begin
+        // Read a new symbol.
         if (!in_vld && !in_rdy) begin
-          next_state <= StateWritingValue;
+          // Done reading symbol, re-evaluate state.
+          next_state <= UPDATE_STATE;
         end else if (in_vld && in_rdy) begin
           decoder_state <= (decoder_state << `SYM_WIDTH) + in;
           in_rdy <= 1'b0;
