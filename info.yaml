@@ -44,8 +44,8 @@ pinout:
   uo[7]: ""
 
   # Bidirectional pins
-  uio[0]: "cmd"
-  uio[1]: "cmd"
+  uio[0]: "mode"
+  uio[1]: "mode"
   uio[2]: "in_vld"
   uio[3]: "out_rdy"
   uio[4]: "in_rdy"
