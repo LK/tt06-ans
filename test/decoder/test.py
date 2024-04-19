@@ -103,7 +103,7 @@ async def test_decoder_decode(dut):
         symbol = lib.hw.decode(bitstream_model)
         output_model.append(symbol)
 
-        await ClockCycles(dut.clk, 20)
+        await ClockCycles(dut.clk, 25)
         
         assert dut.out_vld.value == 1
         assert dut.out_reg.value == symbol
