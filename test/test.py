@@ -3,8 +3,6 @@
 
 import sys
 
-# sys.path.append(".")
-
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
@@ -23,7 +21,7 @@ async def load_counts(dut, state):
     dut.ans_in_vld.value = 0
     await ClockCycles(dut.clk, 2)
 
-# @cocotb.test()
+@cocotb.test()
 async def test_load(dut):
   dut._log.info("Start")
   

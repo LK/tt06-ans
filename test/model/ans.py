@@ -1,4 +1,9 @@
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    import pip
+    pip.main(['install', 'numpy'])
+    import numpy as np
 
 
 def C_rANS(s, state, symbol_counts):
@@ -128,6 +133,7 @@ class AnsHardware:
             print('new state', self.state)
             return output
 
+        print('updating for symbol', symbol)
         self.state = self.c_rANS(self.state, symbol)
 
         print('post-encode state', self.state)
