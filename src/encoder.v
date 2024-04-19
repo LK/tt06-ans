@@ -29,19 +29,19 @@ module ans_encoder (
     end else if (ena && state_reg == 0) begin
       state_reg <= total_count + 1;
     end else if (ena && in_vld && in_rdy) begin
-      if (state_reg >= ((1 << `SYM_WIDTH) * s_count)) begin
-        out <= state_reg[`SYM_WIDTH-1:0];
-        state_reg <= (state_reg >> `SYM_WIDTH);
-        in_rdy <= 1'b0;
-        out_vld <= 1'b1;
+      if (state_reg >= ((1 << `SYM_WIDTH) * s_count) || out_rdy || out_vld) begin
+        if (!out_vld && !out_rdy) begin
+          out <= state_reg[`SYM_WIDTH-1:0];
+          state_reg <= (state_reg >> `SYM_WIDTH);
+          out_vld <= 1'b1;
+        end else if (out_vld && out_rdy) begin
+          out_vld <= 1'b0;
+        end
       end else begin
         state_reg <= ((state_reg / s_count) * total_count) + s_cumulative + (state_reg % s_count);
-        in_rdy  <= 1'b1;
-        out_vld <= 1'b0;
+        in_rdy  <= 1'b0;
       end
-    end else if (ena && out_vld && out_rdy) begin
-      // Output data has been read, go back to reading an input.
-      out_vld <= 1'b0;
+    end else if (ena && !in_rdy && !in_vld) begin
       in_rdy  <= 1'b1;
     end else if (!ena && (state_reg > 0 || state_output_count > 0)) begin
       in_rdy <= 0;

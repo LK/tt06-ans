@@ -77,16 +77,17 @@ async def test_encoder_state(dut):
     for i in range(16):
         dut.counts[i].value = counts[i]
         dut.cumulative[i].value = sum(counts[:i + 1])
+    
+    await ClockCycles(dut.clk, 10)
 
     for symbol in data_in:
+        print(symbol)
         assert dut.in_rdy.value == 1
 
         dut.in_reg.value = symbol
 
         dut.in_vld.value = 1
-        await ClockCycles(dut.clk, 1)
-        dut.in_vld.value = 0
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 10)
 
         while dut.out_vld.value:
             output = model.encode(symbol)
@@ -96,6 +97,9 @@ async def test_encoder_state(dut):
             assert dut.out_vld.value == 0
             dut.out_rdy.value = 0
             await ClockCycles(dut.clk, 2)
+        
+        dut.in_vld.value = 0
+        await ClockCycles(dut.clk, 10)
         
         output = model.encode(symbol)
         assert output == None
