@@ -48,7 +48,7 @@ async def test_encoder_reset(dut):
     await ClockCycles(dut.clk, 10)
     dut.rst_n.value = 1
 
-    assert dut.encoder.state_reg.value == 0 
+    assert dut.encoder.state_reg.value == 0
     assert dut.encoder.in_rdy == 1
     assert dut.encoder.out_vld == 0
     assert dut.encoder.out == 0
@@ -56,7 +56,6 @@ async def test_encoder_reset(dut):
     await ClockCycles(dut.clk, 2)
 
     assert dut.encoder.state_reg.value == model.state
-
 
 @cocotb.test()
 async def test_encoder_state(dut):

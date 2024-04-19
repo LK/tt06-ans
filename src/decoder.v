@@ -112,6 +112,7 @@ always @(posedge clk or negedge rst_n) begin
     start_icdf_lookup <= 0;
     decoder_state_ptr <= 0;
     icdf_in <= 0;
+    decoder_state <= 0;
     current_state <= READ_STATE;
     next_state <= READ_STATE;
   end else if (ena) begin
@@ -120,7 +121,7 @@ always @(posedge clk or negedge rst_n) begin
       READ_STATE: begin
         // Read the initial state.
         if (in_vld && in_rdy) begin
-          decoder_state[decoder_state_ptr * 4 +: 4] <= in;
+          decoder_state <= (decoder_state << 4) + in;
           decoder_state_ptr <= decoder_state_ptr + 1;
           in_rdy <= 1'b0;
         end else if (!in_vld && !in_rdy) begin
